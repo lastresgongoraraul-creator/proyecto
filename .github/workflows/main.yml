@@ -1,0 +1,79 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  frontend-lint:
+    name: Frontend Lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: cd frontend && npm install
+      - name: Run ESLint
+        run: cd frontend && npm run lint
+
+  backend-lint:
+    name: Backend Lint (Checkstyle)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Run Checkstyle
+        run: cd backend && mvn checkstyle:check
+
+  ai-service-lint:
+    name: AI Service Lint (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Ruff
+        run: pip install ruff
+      - name: Run Ruff
+        run: ruff check ai-service
+
+  chat-service-lint:
+    name: Chat Service Lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: chat-service/package-lock.json
+      - name: Install dependencies
+        run: cd chat-service && npm install
+      - name: Run ESLint
+        run: cd chat-service && npm run lint
+
+  build-services:
+    name: Build Services (Docker Compose)
+    needs: [frontend-lint, backend-lint, ai-service-lint, chat-service-lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .env file
+        run: cp .env.example .env
+      - name: Build with Docker Compose
+        run: docker compose build
