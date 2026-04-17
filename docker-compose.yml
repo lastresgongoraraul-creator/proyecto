@@ -33,7 +33,9 @@ services:
     ports:
       - "${BACK_PORT}:8080"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DB_URL: jdbc:postgresql://postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-app_db}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
       REDIS_URL: ${REDIS_URL}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
     depends_on:
