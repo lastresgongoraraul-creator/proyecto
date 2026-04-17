@@ -22,11 +22,23 @@ public class Game {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false)
-    private String title;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-    @Column(length = 100)
-    private String genre;
+    @Column(name = "primary_genre", length = 100)
+    private String primaryGenre;
+
+    @Column(name = "igdb_id", unique = true)
+    private Integer igdbId;
+
+    @Column(columnDefinition = "TEXT")
+    private String summary;
+
+    @Column(name = "platforms")
+    private String[] platforms;
+
+    @Column(name = "genres")
+    private String[] genres;
 
     @Column(name = "avg_score", precision = 3, scale = 2)
     private BigDecimal avgScore;
@@ -34,8 +46,10 @@ public class Game {
     @Column(name = "total_reviews")
     private Integer totalReviews;
 
-    // pgvector column mapping (using columnDefinition for basic support)
-    @Column(columnDefinition = "vector(1536)")
+    @Column(name = "release_year")
+    private Integer releaseYear;
+
+    @Column(columnDefinition = "vector(384)")
     private String embedding;
 
     @CreationTimestamp

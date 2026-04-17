@@ -8,8 +8,8 @@ import api from '../api/axios';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Correo electrónico no válido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
       login(response.data.accessToken, response.data.user);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Error al iniciar sesión. Por favor, inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -42,8 +42,8 @@ const Login: React.FC = () => {
   return (
     <div className="max-w-md mx-auto mt-12">
       <div className="bg-slate-900/50 p-8 rounded-2xl border border-white/10 backdrop-blur-sm shadow-2xl">
-        <h1 className="text-3xl font-bold mb-6 text-center">Welcome Back</h1>
-        <p className="text-slate-400 text-center mb-8">Enter your credentials to access your account</p>
+        <h1 className="text-3xl font-bold mb-6 text-center">Bienvenido</h1>
+        <p className="text-slate-400 text-center mb-8">Introduce tus credenciales para acceder a tu cuenta</p>
 
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg">
@@ -53,17 +53,17 @@ const Login: React.FC = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
             <input
               {...register('email')}
               className="w-full px-4 py-3 bg-slate-800 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              placeholder="name@example.com"
+              placeholder="nombre@ejemplo.com"
             />
             {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
             <div className="relative">
               <input
                 {...register('password')}
@@ -87,14 +87,14 @@ const Login: React.FC = () => {
             disabled={isLoading}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
           >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar'}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-slate-400">
-          Don't have an account?{' '}
+          ¿No tienes una cuenta?{' '}
           <Link to="/register" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
-            Register now
+            Regístrate ahora
           </Link>
         </p>
       </div>

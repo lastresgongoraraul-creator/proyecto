@@ -1,0 +1,10 @@
+{
+  "name": "chat-service",
+  "version": "1.0.0",
+  "description": "Minimal chat service skeleton",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {}
+}

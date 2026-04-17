@@ -6,6 +6,22 @@ interface GameCardProps {
   game: Game;
 }
 
+const GENRE_MAP: Record<string, string> = {
+  'Action': 'Acción',
+  'RPG': 'RPG',
+  'Adventure': 'Aventura',
+  'Strategy': 'Estrategia',
+  'Shooter': 'Disparos',
+  'Sports': 'Deportes'
+};
+
+const PLATFORM_MAP: Record<string, string> = {
+  'PC': 'PC',
+  'PlayStation 5': 'PS5',
+  'Xbox Series X': 'Xbox Series X',
+  'Nintendo Switch': 'Switch'
+};
+
 const GameCard: React.FC<GameCardProps> = ({ game }) => {
   return (
     <div className="group bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col">
@@ -23,7 +39,9 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
       
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-center gap-2 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
-          <span className="bg-white/5 px-2 py-0.5 rounded text-slate-300">{game.genre}</span>
+          <span className="bg-white/5 px-2 py-0.5 rounded text-slate-300">
+            {GENRE_MAP[game.genre] || game.genre}
+          </span>
         </div>
         
         <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors line-clamp-1">
@@ -37,7 +55,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Monitor className="w-4 h-4" />
-            <span>{game.platform}</span>
+            <span>{PLATFORM_MAP[game.platform] || game.platform}</span>
           </div>
           <span className="text-xs text-slate-500 font-medium">{game.releaseYear}</span>
         </div>
