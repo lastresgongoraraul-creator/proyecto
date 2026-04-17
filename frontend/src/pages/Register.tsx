@@ -8,12 +8,12 @@ import api from '../api/axios';
 import { Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  username: z.string().min(3, 'El nombre de usuario debe tener al menos 3 caracteres'),
+  email: z.string().email('Correo electrónico no válido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 });
 
@@ -43,7 +43,7 @@ const Register: React.FC = () => {
       login(response.data.accessToken, response.data.user);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(err.response?.data?.message || 'Error en el registro. Por favor, inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +57,8 @@ const Register: React.FC = () => {
             <UserPlus className="w-8 h-8 text-indigo-400" />
           </div>
         </div>
-        <h1 className="text-3xl font-bold mb-2 text-center">Create Account</h1>
-        <p className="text-slate-400 text-center mb-8">Join the ultimate gaming community</p>
+        <h1 className="text-3xl font-bold mb-2 text-center">Crear Cuenta</h1>
+        <p className="text-slate-400 text-center mb-8">Únete a la comunidad definitiva de gaming</p>
 
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg">
@@ -68,27 +68,27 @@ const Register: React.FC = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Nombre de Usuario</label>
             <input
               {...register('username')}
               className="w-full px-4 py-3 bg-slate-800 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              placeholder="gamer123"
+              placeholder="jugador123"
             />
             {errors.username && <p className="mt-1 text-xs text-red-400">{errors.username.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Correo Electrónico</label>
             <input
               {...register('email')}
               className="w-full px-4 py-3 bg-slate-800 border border-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              placeholder="name@example.com"
+              placeholder="nombre@ejemplo.com"
             />
             {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
             <div className="relative">
               <input
                 {...register('password')}
@@ -108,7 +108,7 @@ const Register: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Confirmar Contraseña</label>
             <input
               {...register('confirmPassword')}
               type="password"
@@ -123,14 +123,14 @@ const Register: React.FC = () => {
             disabled={isLoading}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
           >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear Cuenta'}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-slate-400">
-          Already have an account?{' '}
+          ¿Ya tienes una cuenta?{' '}
           <Link to="/login" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
-            Sign in
+            Inicia sesión
           </Link>
         </p>
       </div>

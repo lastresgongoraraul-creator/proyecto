@@ -6,8 +6,21 @@ import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { Search, Loader2, Ghost } from 'lucide-react';
 import type { Game, GamePage } from '../types';
 
-const GENRES = ['Action', 'RPG', 'Adventure', 'Strategy', 'Shooter', 'Sports'];
-const PLATFORMS = ['PC', 'PlayStation 5', 'Xbox Series X', 'Nintendo Switch'];
+const GENRE_MAP: Record<string, string> = {
+  'Action': 'Acción',
+  'RPG': 'RPG',
+  'Adventure': 'Aventura',
+  'Strategy': 'Estrategia',
+  'Shooter': 'Disparos',
+  'Sports': 'Deportes'
+};
+
+const PLATFORM_MAP: Record<string, string> = {
+  'PC': 'PC',
+  'PlayStation 5': 'PS5',
+  'Xbox Series X': 'Xbox Series X',
+  'Nintendo Switch': 'Switch'
+};
 
 const Catalog: React.FC = () => {
   const [search, setSearch] = useState('');
@@ -49,43 +62,43 @@ const Catalog: React.FC = () => {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1 space-y-2">
-          <label className="text-sm font-medium text-slate-400">Search Games</label>
+          <label className="text-sm font-medium text-slate-400">Buscar Juegos</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title..."
+              placeholder="Buscar por título..."
               className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
           </div>
         </div>
 
         <div className="w-full md:w-48 space-y-2">
-          <label className="text-sm font-medium text-slate-400">Genre</label>
+          <label className="text-sm font-medium text-slate-400">Género</label>
           <select
             value={genre}
             onChange={(e) => setGenre(e.target.value)}
             className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
           >
-            <option value="">All Genres</option>
-            {GENRES.map((g) => (
-              <option key={g} value={g}>{g}</option>
+            <option value="">Todos los géneros</option>
+            {Object.entries(GENRE_MAP).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
             ))}
           </select>
         </div>
 
         <div className="w-full md:w-48 space-y-2">
-          <label className="text-sm font-medium text-slate-400">Platform</label>
+          <label className="text-sm font-medium text-slate-400">Plataforma</label>
           <select
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
             className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
           >
-            <option value="">All Platforms</option>
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>{p}</option>
+            <option value="">Todas las plataformas</option>
+            {Object.entries(PLATFORM_MAP).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
             ))}
           </select>
         </div>
@@ -98,18 +111,18 @@ const Catalog: React.FC = () => {
           }}
           className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
         >
-          Reset
+          Limpiar
         </button>
       </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-          <p className="text-slate-400 animate-pulse">Scanning the multiverse for games...</p>
+          <p className="text-slate-400 animate-pulse">Escaneando el multiverso en busca de juegos...</p>
         </div>
       ) : isError ? (
         <div className="text-center py-20 bg-red-500/5 rounded-2xl border border-red-500/10">
-          <p className="text-red-400">Failed to load games. Is the backend running?</p>
+          <p className="text-red-400">Error al cargar los juegos. ¿Está el backend ejecutándose?</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -124,7 +137,7 @@ const Catalog: React.FC = () => {
       {!isLoading && data?.pages[0]?.content.length === 0 && (
         <div className="text-center py-20">
           <Ghost className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <p className="text-slate-500 text-lg">No games found matching your filters.</p>
+          <p className="text-slate-500 text-lg">No se encontraron juegos que coincidan con los filtros.</p>
         </div>
       )}
 
@@ -133,7 +146,7 @@ const Catalog: React.FC = () => {
         {isFetchingNextPage && (
           <div className="flex items-center gap-2 text-indigo-400 font-medium">
             <Loader2 className="w-5 h-5 animate-spin" />
-            Loading more...
+            Cargando más...
           </div>
         )}
       </div>

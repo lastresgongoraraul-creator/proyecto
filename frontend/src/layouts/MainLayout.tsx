@@ -19,13 +19,13 @@ const MainLayout: React.FC = () => {
             {!user ? (
               <>
                 <Link to="/login" className="text-sm font-medium hover:text-indigo-400 transition-colors">
-                  Login
+                  Iniciar sesión
                 </Link>
                 <Link 
                   to="/register" 
                   className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-all shadow-lg shadow-indigo-500/20"
                 >
-                  Register
+                  Registrarse
                 </Link>
               </>
             ) : (
@@ -37,7 +37,7 @@ const MainLayout: React.FC = () => {
                 <button 
                   onClick={logout}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-red-400 transition-all"
-                  title="Logout"
+                  title="Cerrar sesión"
                 >
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -53,7 +53,7 @@ const MainLayout: React.FC = () => {
 
       <footer className="border-t border-white/5 py-8 mt-12 bg-slate-900/50">
         <div className="container mx-auto px-4 text-center text-sm text-slate-500">
-          <p>&copy; 2026 GameSphere. Built with React & Vite.</p>
+          <p>&copy; 2026 GameSphere. Desarrollado con React y Vite.</p>
         </div>
       </footer>
     </div>
