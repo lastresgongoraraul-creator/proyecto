@@ -16,7 +16,23 @@ export const fetchGames = async (
   if (filters.genre) params.append('genre', filters.genre);
   if (filters.platform) params.append('platform', filters.platform);
   if (filters.search) params.append('q', filters.search);
-
   const response = await api.get(`/games?${params.toString()}`);
-  return response.data;
+  const data = response.data;
+  
+  // Backend might be returning an array directly instead of a GamePage object. wrapper:
+  if (Array.isArray(data)) {
+    const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
+    return {
+      content: data,
+      nextCursor: nextCursor,
+      hasMore: data.length >= 10 // Assuming default size=10 to determine if hasMore
+    };
+  }
+
+  // Gracefully handle undefined or bad responses
+  if (!data || !data.content) {
+    return { content: [], nextCursor: null, hasMore: false };
+  }
+
+  return data;
 };
