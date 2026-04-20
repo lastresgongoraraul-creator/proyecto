@@ -44,13 +44,15 @@ public class GameController {
     private GameResponse mapToResponse(Game game) {
         return GameResponse.builder()
                 .id(game.getId())
-                .name(game.getName())
-                .primaryGenre(game.getPrimaryGenre())
+                .title(game.getName())
+                .description(game.getSummary())
+                .genre(game.getPrimaryGenre())
                 .avgScore(game.getAvgScore())
                 .totalReviews(game.getTotalReviews())
+                .thumbnail(game.getCoverUrl())
+                .platform(game.getPlatforms() != null && game.getPlatforms().length > 0 ? game.getPlatforms()[0] : "N/A")
                 .platforms(game.getPlatforms())
                 .releaseYear(game.getReleaseYear())
-                .summary(game.getSummary())
                 .igdbId(game.getIgdbId())
                 .build();
     }

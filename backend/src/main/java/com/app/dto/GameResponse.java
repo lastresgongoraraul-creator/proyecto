@@ -13,13 +13,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class GameResponse {
     private Long id;
-    private String name;
-    private String primaryGenre;
+    private String title;
+    private String description;
     private BigDecimal avgScore;
     private Integer totalReviews;
     private String thumbnail; 
+    private String genre;
+    private String platform;
     private String[] platforms;
     private Integer releaseYear;
-    private String summary;
     private Integer igdbId;
 }

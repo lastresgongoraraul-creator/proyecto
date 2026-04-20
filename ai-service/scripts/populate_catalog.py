@@ -55,6 +55,7 @@ def populate(limit=50):
             genres=data["genres"],
             platforms=data["platforms"],
             release_year=data["release_year"],
+            cover_url=data.get("cover_url"),
             embedding=embedding
         )
         

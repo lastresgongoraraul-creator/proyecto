@@ -15,7 +15,7 @@ export const fetchGames = async (
   if (cursor) params.append('cursor', cursor);
   if (filters.genre) params.append('genre', filters.genre);
   if (filters.platform) params.append('platform', filters.platform);
-  if (filters.search) params.append('q', filters.search);
+  if (filters.search) params.append('search', filters.search);
   const response = await api.get(`/games?${params.toString()}`);
   const data = response.data;
   

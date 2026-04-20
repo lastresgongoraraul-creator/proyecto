@@ -40,8 +40,8 @@ class IGDBService:
             "Authorization": f"Bearer {self.token}"
         }
 
-        # Apicalypse query
-        query = f"fields name, summary, genres.name, platforms.name, first_release_date; limit {limit}; offset {offset};"
+        # Apicalypse query with cover field
+        query = f"fields name, summary, genres.name, platforms.name, first_release_date, cover.url; limit {limit}; offset {offset};"
         
         response = requests.post(f"{self.base_url}/games", headers=headers, data=query)
         
@@ -65,12 +65,20 @@ class IGDBService:
             ts = game.get("first_release_date")
             year = datetime.fromtimestamp(ts).year if ts else None
             
+            # Format cover URL (convert // to https:// and use t_cover_big)
+            cover_url = game.get("cover", {}).get("url")
+            if cover_url:
+                if cover_url.startswith("//"):
+                    cover_url = "https:" + cover_url
+                cover_url = cover_url.replace("t_thumb", "t_cover_big")
+
             formatted.append({
                 "igdb_id": game["id"],
                 "name": game["name"],
                 "summary": game.get("summary", ""),
                 "genres": genres,
                 "platforms": platforms,
-                "release_year": year
+                "release_year": year,
+                "cover_url": cover_url
             })
         return formatted

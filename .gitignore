@@ -1,0 +1,21 @@
+# Maven
+target/
+backend/target/
+chat-service/target/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.log
+
+# Environment
+.env
+backend/.env
+ai-service/.env

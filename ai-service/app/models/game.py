@@ -13,6 +13,7 @@ class Game(Base):
     genres = Column(ARRAY(String), nullable=True) # Added in V2 migration
     platforms = Column(ARRAY(String), nullable=True)
     release_year = Column(Integer, nullable=True)
+    cover_url = Column(String, nullable=True)
     
     # Metadata fields from backend
     avg_score = Column(Float, default=0.0)

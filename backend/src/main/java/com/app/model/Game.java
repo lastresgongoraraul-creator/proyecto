@@ -49,6 +49,9 @@ public class Game {
     @Column(name = "release_year")
     private Integer releaseYear;
 
+    @Column(name = "cover_url", length = 512)
+    private String coverUrl;
+
     @Column(columnDefinition = "vector(384)")
     private String embedding;
 
