@@ -7,11 +7,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from app.api.games import router as games_router
+
 app = FastAPI(
     title="AI Service",
     description="Service for game recommendations and embeddings",
     version="1.0.0"
 )
+
+app.include_router(games_router)
 
 @app.exception_handler(AIException)
 async def ai_exception_handler(request: Request, exc: AIException):

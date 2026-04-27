@@ -1,6 +1,7 @@
 package com.app.controller;
 
 import com.app.dto.GameResponse;
+import com.app.dto.PagedResponse;
 import com.app.model.Game;
 import com.app.repository.GameRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,24 +20,28 @@ public class GameController {
     private final GameRepository gameRepository;
 
     @GetMapping
-    public ResponseEntity<List<GameResponse>> getGames(
+    public ResponseEntity<PagedResponse<GameResponse>> getGames(
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String platform) {
 
-        // Default cursor if not provided (start from the beginning)
         Long lastId = cursor != null ? cursor : 0L;
 
-        // Implementation of filtering and pagination
-        // Note: For simplicity, we use the CursorPaginationRepository method.
-        // In a real scenario, we'd combine this with a Specification or QueryDSL for dynamic filters.
         List<Game> games = gameRepository.findTopNByIdGreaterThanOrderByIdAsc(lastId, PageRequest.of(0, size));
 
-        List<GameResponse> response = games.stream()
+        List<GameResponse> responseContent = games.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+
+        Long nextCursor = games.isEmpty() ? null : games.get(games.size() - 1).getId();
+
+        PagedResponse<GameResponse> response = PagedResponse.<GameResponse>builder()
+                .content(responseContent)
+                .nextCursor(nextCursor)
+                .size(games.size())
+                .build();
 
         return ResponseEntity.ok(response);
     }
