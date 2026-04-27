@@ -23,10 +23,12 @@ class AIEngine:
     def create_game_text(self, game_name: str, summary: str, genres: list, platforms: list):
         """
         Creates a descriptive text for the game to be embedded.
+        Optimized for all-MiniLM-L6-v2 by prioritizing genre and omitting platforms (noise).
         """
         genres_str = ", ".join(genres) if genres else "Unknown"
-        platforms_str = ", ".join(platforms) if platforms else "Unknown"
-        content = f"Game: {game_name}. Summary: {summary or ''}. Genres: {genres_str}. Platforms: {platforms_str}."
+        # Omit platforms to avoid noise (e.g. grouping different games just because both are on PS5)
+        # Structure it to prioritize Title and Genre.
+        content = f"Title: {game_name}. Genre: {genres_str}. Description: {summary or ''}"
         return content
 
 # Singleton instance

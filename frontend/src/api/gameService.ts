@@ -1,5 +1,5 @@
 import api from './axios';
-import type { GamePage } from '../types';
+import type { Game, GamePage } from '../types';
 
 export interface GameFilters {
   genre?: string;
@@ -35,4 +35,55 @@ export const fetchGames = async (
   }
 
   return data;
+};
+
+export const fetchGameById = async (id: string): Promise<Game> => {
+  const response = await api.get(`/games/${id}`);
+  return response.data;
+};
+
+export const fetchSimilarGames = async (id: string, minScore: number = 0): Promise<Game[]> => {
+  // Hit the AI service running on port 8000
+  const response = await fetch(`http://localhost:8000/games/${id}/similar?min_score=${minScore}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch similar games');
+  }
+  const data = await response.json();
+  // Map the AI response format to our Game format
+  interface AIGame {
+    id: number;
+    name: string;
+    summary: string;
+    cover_url: string;
+    primary_genre: string;
+    platforms: string[];
+    release_year: number;
+    avg_score: number;
+  }
+
+  return data.map((g: AIGame) => ({
+    id: g.id.toString(),
+    title: g.name,
+    description: g.summary,
+    thumbnail: g.cover_url,
+    genre: g.primary_genre,
+    platform: g.platforms && g.platforms.length > 0 ? g.platforms[0] : 'N/A',
+    releaseYear: g.release_year,
+    avgScore: g.avg_score,
+  }));
+};
+
+export const postReview = async (gameId: number, score: number, comment: string): Promise<any> => {
+  const response = await api.post('/reviews', { gameId, score, comment });
+  return response.data;
+};
+
+export const updateReview = async (id: number, gameId: number, score: number, comment: string): Promise<any> => {
+  const response = await api.put(`/reviews/${id}`, { gameId, score, comment });
+  return response.data;
+};
+
+export const deleteReview = async (id: number): Promise<any> => {
+  const response = await api.delete(`/reviews/${id}`);
+  return response.data;
 };

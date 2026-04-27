@@ -7,10 +7,11 @@ from app.core.errors import AIException
 router = APIRouter(prefix="/games", tags=["Games"])
 
 @router.get("/{id}/similar")
-def get_similar_games(id: int, limit: int = 5, db: Session = Depends(get_db)):
+def get_similar_games(id: int, limit: int = 5, min_score: float = 0.0, db: Session = Depends(get_db)):
     """
     Get similar games using pgvector cosine distance.
     Uses the HNSW index for performance.
+    Allows filtering by a minimum average score.
     """
     # 1. Fetch the reference game
     reference_game = db.query(Game).filter(Game.id == id).first()
@@ -20,11 +21,12 @@ def get_similar_games(id: int, limit: int = 5, db: Session = Depends(get_db)):
     if reference_game.embedding is None:
         raise AIException(status_code=400, message=f"Game with ID {id} has no embedding", error_type="Bad Request")
 
-    # 2. Perform similarity search
+    # 2. Perform similarity search with minimum score filter
     # pgvector supports <-> (L2 distance), <=> (cosine distance), <#> (inner product)
     similar_games = (
         db.query(Game)
         .filter(Game.id != id)
+        .filter(Game.avg_score >= min_score)
         .order_by(Game.embedding.cosine_distance(reference_game.embedding))
         .limit(limit)
         .all()

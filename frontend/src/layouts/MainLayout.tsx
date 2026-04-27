@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Gamepad2, LogOut, User as UserIcon } from 'lucide-react';
 
 const MainLayout: React.FC = () => {

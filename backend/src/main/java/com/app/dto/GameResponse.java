@@ -1,14 +1,15 @@
 package com.app.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+import lombok.experimental.SuperBuilder;
+
 @Data
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 public class GameResponse {
@@ -20,7 +21,12 @@ public class GameResponse {
     private String thumbnail; 
     private String genre;
     private String platform;
-    private String[] platforms;
+    private java.util.List<String> platforms;
     private Integer releaseYear;
     private Integer igdbId;
+    private String pegi;
+    private Boolean isMultiplayer;
+    private String developer;
+    private String publisher;
+    private String officialWebsite;
 }

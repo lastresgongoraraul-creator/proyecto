@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Game } from '../types';
 import { Star, Monitor } from 'lucide-react';
 
@@ -23,17 +24,26 @@ const PLATFORM_MAP: Record<string, string> = {
 };
 
 const GameCard: React.FC<GameCardProps> = ({ game }) => {
+  const navigate = useNavigate();
+  // Fix IGDB URLs missing https:
+  const thumbnailUrl = game.thumbnail?.startsWith('//') 
+    ? `https:${game.thumbnail}` 
+    : game.thumbnail || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop';
+
   return (
-    <div className="group bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col">
+    <div 
+      onClick={() => navigate(`/games/${game.id}`)}
+      className="group bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col h-full cursor-pointer"
+    >
       <div className="relative aspect-video overflow-hidden">
         <img 
-          src={game.thumbnail || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop'} 
+          src={thumbnailUrl} 
           alt={game.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-bold text-indigo-400 border border-indigo-400/20 flex items-center gap-1">
           <Star className="w-3 h-3 fill-indigo-400" />
-          {game.avgScore.toFixed(1)}
+          {game.avgScore != null ? game.avgScore.toFixed(1) : 'N/A'}
         </div>
       </div>
       

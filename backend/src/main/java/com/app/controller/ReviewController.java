@@ -25,4 +25,22 @@ public class ReviewController {
         Review review = reviewService.createReview(request, userEmail);
         return ResponseEntity.ok(review);
     }
+
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    public ResponseEntity<Review> updateReview(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @Valid @RequestBody ReviewRequest request,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        return ResponseEntity.ok(reviewService.updateReview(id, request, userEmail));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteReview(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        reviewService.deleteReview(id, userEmail);
+        return ResponseEntity.noContent().build();
+    }
 }

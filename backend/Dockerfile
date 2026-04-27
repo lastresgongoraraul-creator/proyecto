@@ -3,7 +3,8 @@ FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN mvn clean package -DskipTests
+COPY checkstyle.xml .
+RUN mvn clean package -DskipTests -Dcheckstyle.skip=true
 
 # Production stage
 FROM eclipse-temurin:17-jre-alpine

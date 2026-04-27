@@ -88,6 +88,36 @@ public class AuthController {
         return ResponseEntity.status(401).build();
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        if (authentication == null || 
+            !authentication.isAuthenticated() || 
+            authentication.getName().equals("anonymousUser")) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        try {
+            User user = userRepository.findByEmail(authentication.getName())
+                    .orElse(null);
+            
+            if (user == null) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            AuthResponse.UserDto userDto = AuthResponse.UserDto.builder()
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build();
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("user", userDto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
     private AuthResponse buildAuthResponse(Authentication auth, User user) {
         String accessToken = tokenProvider.generateAccessToken(auth);
         String refreshToken = tokenProvider.generateRefreshToken(auth);

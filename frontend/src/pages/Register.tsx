@@ -3,8 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import api from '../api/axios';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({
@@ -24,29 +26,33 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: RegisterForm) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // In a real flow, we might just register, or register + auto-login
-      const response = await api.post('/auth/register', {
-        username: data.username,
-        email: data.email,
-        password: data.password
-      });
+  const mutation = useMutation({
+    mutationFn: (data: RegisterForm) => api.post('/auth/register', {
+      username: data.username,
+      email: data.email,
+      password: data.password
+    }),
+    onSuccess: (response) => {
       login(response.data.accessToken, response.data.user);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error en el registro. Por favor, inténtalo de nuevo.');
-    } finally {
-      setIsLoading(false);
+    },
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Error en el registro. Por favor, inténtalo de nuevo.');
+      } else {
+        setError('Ocurrió un error inesperado.');
+      }
     }
+  });
+
+  const onSubmit = (data: RegisterForm) => {
+    setError(null);
+    mutation.mutate(data);
   };
 
   return (
@@ -120,10 +126,10 @@ const Register: React.FC = () => {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={mutation.isPending}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
           >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear Cuenta'}
+            {mutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crear Cuenta'}
           </button>
         </form>
 

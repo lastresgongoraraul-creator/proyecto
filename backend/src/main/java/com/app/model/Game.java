@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "games")
@@ -15,6 +16,7 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@org.hibernate.annotations.DynamicUpdate
 public class Game {
 
     @Id
@@ -35,12 +37,12 @@ public class Game {
     private String summary;
 
     @Column(name = "platforms")
-    private String[] platforms;
+    private List<String> platforms;
 
     @Column(name = "genres")
-    private String[] genres;
+    private List<String> genres;
 
-    @Column(name = "avg_score", precision = 3, scale = 2)
+    @Column(name = "avg_score", precision = 4, scale = 2)
     private BigDecimal avgScore;
 
     @Column(name = "total_reviews")
@@ -54,6 +56,21 @@ public class Game {
 
     @Column(columnDefinition = "vector(384)")
     private String embedding;
+
+    @Column(name = "pegi", length = 20)
+    private String pegi;
+
+    @Column(name = "is_multiplayer")
+    private Boolean isMultiplayer;
+
+    @Column(name = "developer", length = 255)
+    private String developer;
+
+    @Column(name = "publisher", length = 255)
+    private String publisher;
+
+    @Column(name = "official_website", length = 512)
+    private String officialWebsite;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

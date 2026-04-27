@@ -3,8 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import api from '../api/axios';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -19,24 +21,29 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/login', data);
+  const mutation = useMutation({
+    mutationFn: (data: LoginForm) => api.post('/auth/login', data),
+    onSuccess: (response) => {
       login(response.data.accessToken, response.data.user);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión. Por favor, inténtalo de nuevo.');
-    } finally {
-      setIsLoading(false);
+    },
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Error al iniciar sesión. Por favor, inténtalo de nuevo.');
+      } else {
+        setError('Ocurrió un error inesperado.');
+      }
     }
+  });
+
+  const onSubmit = (data: LoginForm) => {
+    setError(null);
+    mutation.mutate(data);
   };
 
   return (
@@ -84,10 +91,10 @@ const Login: React.FC = () => {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={mutation.isPending}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
           >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar'}
+            {mutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar'}
           </button>
         </form>
 
