@@ -49,4 +49,10 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
+
+    @Column(columnDefinition = "vector(384)", insertable = false, updatable = false)
+    private String embedding;
+
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
 }

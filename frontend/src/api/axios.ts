@@ -12,6 +12,8 @@ export const setAccessToken = (token: string | null) => {
   memoryToken = token;
 };
 
+export const getAccessToken = () => memoryToken;
+
 api.interceptors.request.use(
   (config) => {
     if (memoryToken) {
