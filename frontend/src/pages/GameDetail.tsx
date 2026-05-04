@@ -3,8 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchGameById, fetchSimilarGames, postReview, updateReview, deleteReview } from '../api/gameService';
 import { useAuth } from '../hooks/useAuth';
-import { ArrowLeft, Star, Monitor, Loader2, Calendar, Edit2, Trash2, Globe, Users, Shield } from 'lucide-react';
+import { ArrowLeft, Star, Monitor, Loader2, Calendar, Edit2, Trash2, Globe, Users, Shield, Heart } from 'lucide-react';
 import GameCard from '../components/GameCard';
+
+import { likeReview, unlikeReview, sendFriendRequest, unfollowUser } from '../api/socialService';
+import { Link } from 'react-router-dom';
 
 const GENRE_MAP: Record<string, string> = {
   'Action': 'Acción',
@@ -67,6 +70,14 @@ const GameDetail: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (reviewId: number) => deleteReview(reviewId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', id] });
+    },
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: ({ reviewId, liked }: { reviewId: number; liked: boolean }) => 
+      liked ? unlikeReview(reviewId) : likeReview(reviewId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['game', id] });
     },
@@ -266,12 +277,44 @@ const GameDetail: React.FC = () => {
                       <>
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex flex-col">
-                            <div className="font-medium text-indigo-400">@{review.username}</div>
+                            <div className="flex items-center gap-3">
+                              <Link to={`/profile/${review.username}`} className="font-medium text-indigo-400 hover:underline">
+                                @{review.username}
+                              </Link>
+                              {user && user.username !== review.username && (
+                                <button
+                                  onClick={() => {
+                                    if (review.followingAuthor) {
+                                      unfollowUser(review.userId!).then(() => queryClient.invalidateQueries({ queryKey: ['game', id] }));
+                                    } else {
+                                      sendFriendRequest(review.userId!).then(() => {
+                                        alert('Solicitud de amistad enviada!');
+                                        queryClient.invalidateQueries({ queryKey: ['game', id] });
+                                      });
+                                    }
+                                  }}
+                                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                    review.followingAuthor
+                                      ? 'border-slate-700 text-slate-500 hover:bg-slate-800'
+                                      : 'border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10'
+                                  }`}
+                                >
+                                  {review.followingAuthor ? 'Siguiendo' : 'Seguir'}
+                                </button>
+                              )}
+                            </div>
                             <div className="text-xs text-slate-500">
                               {new Date(review.createdAt).toLocaleDateString()}
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => user && likeMutation.mutate({ reviewId: review.id, liked: !!review.liked })}
+                              className={`flex items-center gap-1 text-sm transition-colors ${review.liked ? 'text-pink-500' : 'text-slate-500 hover:text-pink-400'}`}
+                            >
+                              <Heart size={16} fill={review.liked ? 'currentColor' : 'none'} />
+                              {review.likesCount || 0}
+                            </button>
                             <div className="flex items-center gap-1 text-yellow-500 text-sm font-bold">
                               <Star className="w-4 h-4 fill-yellow-500" />
                               {review.score}/10
@@ -404,6 +447,7 @@ const GameDetail: React.FC = () => {
           </div>
         )}
       </div>
+
     </div>
   );
 };

@@ -24,6 +24,9 @@ public class GameController {
 
     private final GameRepository gameRepository;
     private final ReviewRepository reviewRepository;
+    private final com.app.repository.UserRepository userRepository;
+    private final com.app.repository.ReviewLikeRepository reviewLikeRepository;
+    private final com.app.repository.FollowRepository followRepository;
 
     @GetMapping
     public ResponseEntity<PagedResponse<GameResponse>> getGames(
@@ -66,7 +69,10 @@ public class GameController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GameDetailResponse> getGameById(@PathVariable Long id) {
+    public ResponseEntity<GameDetailResponse> getGameById(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
+        final com.app.model.User currentUser = userDetails != null ? 
+                userRepository.findByUsername(userDetails.getUsername()).or(() -> userRepository.findByEmail(userDetails.getUsername())).orElse(null) : null;
+        
         return gameRepository.findById(id)
                 .map(game -> {
                     List<ReviewDto> reviews = reviewRepository.findByGameId(id).stream()
@@ -75,7 +81,13 @@ public class GameController {
                                     .username(r.getUser().getUsername())
                                     .score(r.getScore())
                                     .comment(r.getComment())
+                                    .gameId(game.getId())
+                                    .gameTitle(game.getName())
                                     .createdAt(r.getCreatedAt())
+                                    .userId(r.getUser().getId())
+                                    .likesCount(reviewLikeRepository.countByReview(r))
+                                    .liked(currentUser != null && reviewLikeRepository.existsByReviewAndUser(r, currentUser))
+                                    .followingAuthor(currentUser != null && followRepository.existsByFollowerAndFollowed(currentUser, r.getUser()))
                                     .build())
                             .collect(Collectors.toList());
 
@@ -108,17 +120,23 @@ public class GameController {
     }
 
     private Specification<Game> nameLike(String name) {
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        return (root, query, cb) -> cb.like(
+                cb.function("unaccent", String.class, cb.lower(root.get("name"))),
+                cb.function("unaccent", String.class, cb.literal("%" + name.toLowerCase() + "%"))
+        );
     }
 
     private Specification<Game> genreEquals(String genre) {
-        return (root, query, cb) -> cb.equal(root.get("primaryGenre"), genre);
+        return (root, query, cb) -> cb.like(
+                cb.function("unaccent", String.class, cb.lower(cb.function("array_to_string", String.class, root.get("genres"), cb.literal(",")))),
+                cb.function("unaccent", String.class, cb.literal("%" + genre.toLowerCase() + "%"))
+        );
     }
 
     private Specification<Game> platformContains(String platform) {
         return (root, query, cb) -> cb.like(
-                cb.function("array_to_string", String.class, root.get("platforms"), cb.literal(",")),
-                "%" + platform + "%"
+                cb.function("unaccent", String.class, cb.lower(cb.function("array_to_string", String.class, root.get("platforms"), cb.literal(",")))),
+                cb.function("unaccent", String.class, cb.literal("%" + platform.toLowerCase() + "%"))
         );
     }
 

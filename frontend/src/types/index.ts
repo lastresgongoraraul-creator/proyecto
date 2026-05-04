@@ -16,6 +16,12 @@ export interface Review {
   score: number;
   comment: string;
   createdAt: string;
+  userId?: number;
+  likesCount?: number;
+  liked?: boolean;
+  followingAuthor?: boolean;
+  gameId?: number;
+  gameTitle?: string;
 }
 
 export interface Game {
@@ -41,4 +47,36 @@ export interface GamePage {
   content: Game[];
   nextCursor: string | null;
   hasMore: boolean;
+}
+
+export interface UserProfile {
+  id: number;
+  username: string;
+  createdAt: string;
+  isFollowing: boolean;
+  friendStatus: 'NONE' | 'PENDING' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'FRIENDS';
+  followersCount: number;
+  followingCount: number;
+  reviews: Review[];
+}
+
+export interface AppNotification {
+  id: number;
+  type: 'FOLLOW' | 'LIKE' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPT';
+  senderUsername: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  referenceId?: number; // Request ID or Review ID
+}
+
+export interface ChatMessage {
+  id: number;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: string;
+  roomId?: string;
+  isPrivate?: boolean;
+  fromUsername?: string;
 }
