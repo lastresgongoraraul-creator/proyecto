@@ -27,6 +27,10 @@ public class ReviewService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if ("MUTED".equals(user.getStatus()) && user.getMutedUntil() != null && user.getMutedUntil().isAfter(java.time.ZonedDateTime.now())) {
+            throw new RuntimeException("You are muted and cannot post reviews until " + user.getMutedUntil());
+        }
+
         if (reviewRepository.existsByGameIdAndUserId(request.getGameId(), user.getId())) {
             throw new RuntimeException("User has already reviewed this game");
         }
@@ -85,7 +89,11 @@ public class ReviewService {
         Review review = reviewRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
 
-        if (!review.getUser().getEmail().equals(userEmail)) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ADMIN"));
+
+        if (!review.getUser().getEmail().equals(userEmail) && !isAdmin) {
             throw new RuntimeException("You are not authorized to delete this review");
         }
 

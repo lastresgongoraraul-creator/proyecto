@@ -155,8 +155,9 @@ const Messages: React.FC = () => {
                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                     }`}
                   >
-                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-bold text-sm border border-white/5">
+                    <div className="relative w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-bold text-sm border border-white/5">
                       {conv.username[0].toUpperCase()}
+                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${conv.id % 2 === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`}></div>
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
                       <p className="font-bold truncate">@{conv.username}</p>
@@ -193,8 +194,9 @@ const Messages: React.FC = () => {
                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                     }`}
                   >
-                    <div className="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-500/20">
+                    <div className="relative w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-500/20">
                       {friend.username[0].toUpperCase()}
+                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${friend.id % 2 === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`}></div>
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
                       <p className="font-bold truncate">@{friend.username}</p>

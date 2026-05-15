@@ -8,6 +8,7 @@ import Communities from './pages/Communities';
 import CommunityRoom from './pages/CommunityRoom';
 import Profile from './pages/Profile';
 import Messages from './pages/Messages';
+import AdminDashboard from './pages/AdminDashboard';
 import { NotificationProvider } from './context/NotificationContext';
 import { CommunityProvider } from './context/CommunityContext';
 import ChatWidget from './components/chat/ChatWidget';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
               <Route path="communities" element={<Communities />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:username" element={<Messages />} />
+              <Route path="admin/dashboard" element={<AdminDashboard />} />
             </Route>
 
             {/* Sala de comunidad: pantalla completa, sin layout estándar */}

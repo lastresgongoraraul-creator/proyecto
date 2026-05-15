@@ -87,3 +87,17 @@ export const deleteReview = async (id: number): Promise<any> => {
   const response = await api.delete(`/reviews/${id}`);
   return response.data;
 };
+
+export const postCreateGame = async (game: any): Promise<Game> => {
+  const response = await api.post('/games', game);
+  return response.data;
+};
+
+export const deleteGame = async (id: string): Promise<void> => {
+  await api.delete(`/games/${id}`);
+};
+
+export const putUpdateGame = async (id: string, game: any): Promise<Game> => {
+  const response = await api.put(`/games/${id}`, game);
+  return response.data;
+};

@@ -139,6 +139,7 @@ function getTrendingTopics(roomId) {
 const activeUsers = new Map(); // userId -> socketId
 const userRooms = new Map(); // socketId -> Set<roomId>
 const socketUsernames = new Map(); // socketId -> username
+const userRoles = new Map(); // userId -> role
 
 function getRoomUsers(roomId) {
     const room = io.sockets.adapter.rooms.get(roomId);
@@ -150,7 +151,8 @@ function getRoomUsers(roomId) {
         for (const [uid, sid] of activeUsers.entries()) {
             if (sid === socketId) { foundUserId = uid; break; }
         }
-        users.push({ userId: foundUserId, username });
+        const role = userRoles.get(String(foundUserId)) || 'USER';
+        users.push({ userId: foundUserId, username, role });
     }
     return { count: room.size, users };
 }
@@ -175,7 +177,7 @@ app.get('/rooms', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('register', (data) => {
+    socket.on('register', async (data) => {
         let userId, username;
         if (data && typeof data === 'object') {
             userId = data.userId || data.username;
@@ -190,10 +192,35 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Check if user is banned
+        try {
+            let userResult;
+            if (!isNaN(userId)) {
+                userResult = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+            } else {
+                userResult = await pool.query('SELECT role FROM users WHERE username = $1', [userId]);
+            }
+
+            if (userResult.rows.length > 0) {
+                const role = userResult.rows[0].role;
+                if (role === 'BANNED') {
+                    console.log(`[Socket] Banned user ${userId} (${username}) tried to connect. Disconnecting.`);
+                    socket.disconnect();
+                    return;
+                }
+                userRoles.set(String(userId), role);
+            } else {
+                userRoles.set(String(userId), 'USER');
+            }
+        } catch (err) {
+            console.error('[Database] Error checking user role:', err.message);
+            userRoles.set(String(userId), 'USER');
+        }
+
         activeUsers.set(String(userId), socket.id);
         socketUsernames.set(socket.id, username);
         if (!userRooms.has(socket.id)) userRooms.set(socket.id, new Set());
-        console.log(`[Socket] User ${userId} (${username}) registered`);
+        console.log(`[Socket] User ${userId} (${username}) registered with role ${userRoles.get(String(userId))}`);
     });
 
     socket.on('join_room', async (roomId) => {
@@ -206,7 +233,7 @@ io.on('connection', (socket) => {
         // ─────────────────────────────────────────────
         try {
             const historyResult = await pool.query(`
-                SELECT cm.id, cm.user_id as "userId", u.username, cm.content as text, 
+                SELECT cm.id, cm.user_id as "userId", u.username, u.role, cm.content as text, 
                        cm.created_at as timestamp, cm.game_id as "roomId"
                 FROM chat_messages cm
                 JOIN users u ON cm.user_id = u.id
@@ -288,6 +315,17 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Check if user is banned
+        try {
+            const userRes = await pool.query('SELECT status FROM users WHERE id = $1', [senderId]);
+            if (userRes.rows[0] && userRes.rows[0].status === 'BANNED') {
+                socket.emit('error', { message: 'You are banned from chatting' });
+                return;
+            }
+        } catch (err) {
+            console.error('[Database] Ban check error:', err.message);
+        }
+
         const msgId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const message = { 
             id: msgId, 
@@ -319,8 +357,20 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_message', async ({ roomId, userId, username, text }) => {
+        // Check if user is banned
+        try {
+            const userRes = await pool.query('SELECT status FROM users WHERE id = $1', [userId]);
+            if (userRes.rows[0] && userRes.rows[0].status === 'BANNED') {
+                socket.emit('error', { message: 'You are banned from chatting' });
+                return;
+            }
+        } catch (err) {
+            console.error('[Database] Ban check error:', err.message);
+        }
+
         const msgId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const message = { id: msgId, userId, username, text, timestamp: new Date().toISOString(), roomId };
+        const role = userRoles.get(String(userId)) || 'USER';
+        const message = { id: msgId, userId, username, role, text, timestamp: new Date().toISOString(), roomId };
         
         // Broadcast immediately for low latency
         io.to(roomId).emit('new_message', message);
@@ -364,7 +414,11 @@ io.on('connection', (socket) => {
         const username = socketUsernames.get(socket.id);
         socketUsernames.delete(socket.id);
         for (const [userId, sid] of activeUsers.entries()) {
-            if (sid === socket.id) { activeUsers.delete(userId); break; }
+            if (sid === socket.id) { 
+                activeUsers.delete(userId); 
+                userRoles.delete(userId);
+                break; 
+            }
         }
         const rooms = userRooms.get(socket.id) || new Set();
         for (const roomId of rooms) {

@@ -115,6 +115,44 @@ public class GameController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Game> createGame(@RequestBody Game game) {
+        if (game.getAvgScore() == null) game.setAvgScore(java.math.BigDecimal.ZERO);
+        if (game.getTotalReviews() == null) game.setTotalReviews(0);
+        return ResponseEntity.ok(gameRepository.save(game));
+    }
+
+    @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteGame(@PathVariable Long id) {
+        gameRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Game> updateGame(@PathVariable Long id, @RequestBody Game gameDetails) {
+        Game game = gameRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Game not found"));
+        
+        game.setName(gameDetails.getName());
+        game.setSummary(gameDetails.getSummary());
+        game.setPrimaryGenre(gameDetails.getPrimaryGenre());
+        game.setCoverUrl(gameDetails.getCoverUrl());
+        game.setReleaseYear(gameDetails.getReleaseYear());
+        game.setPegi(gameDetails.getPegi());
+        game.setIsMultiplayer(gameDetails.getIsMultiplayer());
+        game.setDeveloper(gameDetails.getDeveloper());
+        game.setPublisher(gameDetails.getPublisher());
+        game.setOfficialWebsite(gameDetails.getOfficialWebsite());
+        
+        if (gameDetails.getPlatforms() != null) game.setPlatforms(gameDetails.getPlatforms());
+        if (gameDetails.getGenres() != null) game.setGenres(gameDetails.getGenres());
+        
+        return ResponseEntity.ok(gameRepository.save(game));
+    }
+
     private Specification<Game> idGreaterThan(Long id) {
         return (root, query, cb) -> cb.greaterThan(root.get("id"), id);
     }

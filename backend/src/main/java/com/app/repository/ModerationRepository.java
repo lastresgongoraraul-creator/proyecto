@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ModerationRepository extends JpaRepository<ModerationTicket, Long> {
     List<ModerationTicket> findByStatus(ModerationStatus status);
+    long countByReviewId(Long reviewId);
 }

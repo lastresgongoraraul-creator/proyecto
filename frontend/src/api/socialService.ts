@@ -65,3 +65,11 @@ export const fetchFriends = async (): Promise<{ id: number; username: string; av
   const response = await api.get('/social/friends');
   return response.data;
 };
+
+export const postReport = async (reviewId: number, reason: string): Promise<void> => {
+  await api.post('/reports', { reviewId, reason });
+};
+
+export const reportUser = async (userId: number): Promise<void> => {
+  await api.post(`/social/report-user/${userId}`);
+};

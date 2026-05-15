@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -58,6 +59,17 @@ public class UserController {
         followRepository.findByFollowerAndFollowed(follower, followed)
                 .ifPresent(followRepository::delete);
 
+        return ResponseEntity.ok().build();
+    }
+    @PostMapping("/{id}/ban")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    public ResponseEntity<?> banUser(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setStatus("BANNED");
+        userRepository.save(user);
+        
         return ResponseEntity.ok().build();
     }
 }

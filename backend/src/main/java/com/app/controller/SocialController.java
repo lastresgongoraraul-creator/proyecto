@@ -58,6 +58,32 @@ public class SocialController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/report-user/{userId}")
+    public ResponseEntity<?> reportUser(@PathVariable Long userId, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        User reporter = userRepository.findByUsername(userDetails.getUsername())
+                .or(() -> userRepository.findByEmail(userDetails.getUsername()))
+                .orElseThrow();
+        User reported = userRepository.findById(userId).orElseThrow();
+
+        reported.setStatus("MUTED");
+        reported.setMutedUntil(java.time.ZonedDateTime.now().plusHours(24));
+        userRepository.save(reported);
+
+        java.util.List<User> admins = userRepository.findByRoles_Name("ADMIN");
+        for (User admin : admins) {
+            notificationService.sendNotification(
+                    admin,
+                    reporter,
+                    NotificationType.REPORT,
+                    reported.getId(),
+                    "El usuario " + reported.getUsername() + " ha sido reportado y silenciado por 24 horas."
+            );
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/friend-request/{userId}")
     public ResponseEntity<?> sendFriendRequest(@PathVariable Long userId, @AuthenticationPrincipal UserDetails userDetails) {
         System.out.println("DEBUG: sendFriendRequest hit for userId: " + userId + " by: " + (userDetails != null ? userDetails.getUsername() : "ANONYMOUS"));

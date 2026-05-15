@@ -1,0 +1,1 @@
+ALTER TABLE games ALTER COLUMN cover_url TYPE TEXT;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../../hooks/useAuth';
-import { Send, Users, Wifi, WifiOff } from 'lucide-react';
+import { Send, Users, Wifi, WifiOff, Shield, Flag } from 'lucide-react';
 import { fetchCommunityMessages } from '../../api/communityService';
 import type { ChatMessage } from '../../types';
 
@@ -16,7 +16,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [connected, setConnected] = useState(false);
-  const [roomUsers, setRoomUsers] = useState<{ userId: string; username: string }[]>([]);
+  const [roomUsers, setRoomUsers] = useState<{ userId: string; username: string; role?: string }[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -168,7 +168,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
                   return (
                     <div 
                       key={msg.id || index} 
-                      className={`chat-message-row ${isOwn ? 'own' : 'other'} ${isSameUserAsPrev ? 'consecutive' : ''}`}
+                      className={`chat-message-row group ${isOwn ? 'own' : 'other'} ${isSameUserAsPrev ? 'consecutive' : ''}`}
                     >
                       {!isOwn && !isSameUserAsPrev && (
                         <div className="chat-avatar">
@@ -177,11 +177,23 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
                       )}
                       {(!isOwn && isSameUserAsPrev) && <div className="chat-avatar-placeholder" />}
 
-                      <div className={`chat-bubble ${isOwn ? 'bubble-own' : 'bubble-other'}`}>
+                      <div className={`chat-bubble relative ${isOwn ? 'bubble-own' : 'bubble-other'}`}>
+                        {!isOwn && (
+                           <button
+                             onClick={() => alert(`Mensaje ${msg.id} reportado.`)}
+                             className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-500 hover:text-red-400"
+                             title="Reportar"
+                           >
+                             <Flag size={12} />
+                           </button>
+                         )}
                         {(!isSameUserAsPrev || isOwn) && (
                           <div className="chat-bubble-header">
                             {!isOwn && !isSameUserAsPrev && (
-                              <span className="chat-bubble-username">@{msg.username}</span>
+                              <span className={`chat-bubble-username flex items-center gap-1 ${msg.role === 'MODERATOR' ? 'text-emerald-400' : ''}`}>
+                                @{msg.username}
+                                {msg.role === 'MODERATOR' && <Shield size={12} className="text-emerald-400" />}
+                              </span>
                             )}
                             {isOwn && !isSameUserAsPrev && <span className="chat-bubble-username">Tú</span>}
                             <span className="chat-bubble-time">{formatTime(msg.timestamp)}</span>
@@ -234,7 +246,10 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
               <div className="user-avatar-sm">
                 {u.username[0].toUpperCase()}
               </div>
-              <span className="user-name">@{u.username}</span>
+              <span className={`user-name flex items-center gap-1 ${u.role === 'MODERATOR' ? 'text-emerald-400' : ''}`}>
+                @{u.username}
+                {u.role === 'MODERATOR' && <Shield size={12} className="text-emerald-400" />}
+              </span>
               {user && u.username === user.username && <span className="user-you">(tú)</span>}
             </div>
           ))}

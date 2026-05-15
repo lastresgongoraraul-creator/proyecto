@@ -74,6 +74,7 @@ export interface ChatMessage {
   id: number;
   userId: string;
   username: string;
+  role?: string;
   text: string;
   timestamp: string;
   roomId?: string;
