@@ -42,7 +42,7 @@ const Communities: React.FC = () => {
   const { data: communities = [], isLoading, isError } = useQuery<CommunityGame[]>({
     queryKey: ['communities'],
     queryFn: fetchCommunities,
-    refetchInterval: 15_000, // refresh active users count every 15s
+    refetchInterval: 3000, // refresh active users count every 3s
   });
 
   const filtered = communities.filter((c) =>
@@ -159,7 +159,7 @@ const Communities: React.FC = () => {
                     </div>
                     <div className="community-total-badge" title="Miembros totales">
                       <Users size={11} className="text-white/50" />
-                      <span className="ml-1">{community.totalMembers ?? Math.floor((parseInt(community.gameId) % 50) + 120)} miembros</span>
+                      <span className="ml-1">{community.totalMembers || 0} miembros</span>
                     </div>
                   </div>
                   {joined && (

@@ -38,6 +38,10 @@ public class ReportController {
         Review review = reviewRepository.findById(request.getReviewId())
                 .orElseThrow(() -> new RuntimeException("Review not found"));
 
+        if (moderationRepository.existsByReviewIdAndReporterId(review.getId(), reporter.getId())) {
+            return ResponseEntity.badRequest().body("Ya has reportado esta reseña");
+        }
+
         ModerationTicket ticket = ModerationTicket.builder()
                 .review(review)
                 .reporter(reporter)

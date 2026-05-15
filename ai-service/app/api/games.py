@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.models.database import get_db
 from app.models.game import Game
+from app.models.review import Review
 from app.core.errors import AIException
+from transformers import pipeline
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
@@ -48,3 +50,80 @@ def get_similar_games(id: int, limit: int = 5, min_score: float = 0.0, db: Sessi
         }
         for g in similar_games
     ]
+
+sentiment_analyzer = None
+
+def get_sentiment_analyzer():
+    global sentiment_analyzer
+    if sentiment_analyzer is None:
+        # Using a 3-label model (Positive, Neutral, Negative)
+        sentiment_analyzer = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment")
+    return sentiment_analyzer
+
+@router.get("/{id}/sentiment")
+def get_game_sentiment(id: int, db: Session = Depends(get_db)):
+    """
+    Analiza las reseñas de un juego y devuelve un resumen general (positivo, neutral, negativo).
+    """
+    # 1. Fetch reviews for the game
+    reviews = db.query(Review).filter(Review.game_id == id).all()
+    
+    if not reviews:
+        return {
+            "game_id": id,
+            "summary": "No hay reseñas para este juego",
+            "positive": 0,
+            "neutral": 0,
+            "negative": 0,
+            "total": 0
+        }
+        
+    # 2. Extract comments
+    comments = [r.comment for r in reviews if r.comment]
+    
+    if not comments:
+         return {
+            "game_id": id,
+            "summary": "Las reseñas no tienen comentarios",
+            "positive": 0,
+            "neutral": 0,
+            "negative": 0,
+            "total": 0
+        }
+        
+    # 3. Run sentiment analysis
+    analyzer = get_sentiment_analyzer()
+    
+    results = analyzer(comments)
+    
+    # 4. Aggregate results
+    # cardiffnlp model returns labels: LABEL_0 (Negative), LABEL_1 (Neutral), LABEL_2 (Positive)
+    # Let's map them.
+    
+    label_map = {
+        "LABEL_0": "negative",
+        "LABEL_1": "neutral",
+        "LABEL_2": "positive"
+    }
+    
+    counts = {"positive": 0, "neutral": 0, "negative": 0}
+    
+    for res in results:
+        label = res["label"]
+        mapped_label = label_map.get(label, "neutral")
+        counts[mapped_label] += 1
+        
+    total = len(comments)
+    
+    # Determine general summary
+    # If most are positive, summary is positive, etc.
+    max_label = max(counts, key=counts.get)
+    
+    return {
+        "game_id": id,
+        "summary": f"Predominantemente {max_label}",
+        "positive": counts["positive"],
+        "neutral": counts["neutral"],
+        "negative": counts["negative"],
+        "total": total
+    }

@@ -9,6 +9,7 @@ load_dotenv()
 
 from app.api.games import router as games_router
 from app.api.social import router as social_router
+from app.api.recommendations import router as recommendations_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_middleware(
 
 app.include_router(games_router)
 app.include_router(social_router)
+app.include_router(recommendations_router)
 
 @app.exception_handler(AIException)
 async def ai_exception_handler(request: Request, exc: AIException):

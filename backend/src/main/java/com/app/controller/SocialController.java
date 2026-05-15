@@ -60,7 +60,9 @@ public class SocialController {
 
     @PostMapping("/report-user/{userId}")
     public ResponseEntity<?> reportUser(@PathVariable Long userId, @AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) return ResponseEntity.status(401).build();
+        if (userDetails == null || !userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return ResponseEntity.status(403).build();
+        }
         User reporter = userRepository.findByUsername(userDetails.getUsername())
                 .or(() -> userRepository.findByEmail(userDetails.getUsername()))
                 .orElseThrow();

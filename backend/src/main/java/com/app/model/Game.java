@@ -36,9 +36,11 @@ public class Game {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.ARRAY)
     @Column(name = "platforms")
     private List<String> platforms;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.ARRAY)
     @Column(name = "genres")
     private List<String> genres;
 
@@ -54,7 +56,8 @@ public class Game {
     @Column(name = "cover_url", length = 512)
     private String coverUrl;
 
-    @Column(columnDefinition = "vector(384)", insertable = false)
+    @jakarta.persistence.Transient
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String embedding;
 
     @Column(name = "pegi", length = 20)

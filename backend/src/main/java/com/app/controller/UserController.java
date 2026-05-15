@@ -61,6 +61,42 @@ public class UserController {
 
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/me/recommended-games")
+    public ResponseEntity<?> getRecommendedGames(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .or(() -> userRepository.findByEmail(userDetails.getUsername()))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        System.out.println("DEBUG: getRecommendedGames called for user: " + user.getUsername() + " with ID: " + user.getId());
+        
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        String url = "http://ai-service:8000/recommendations/user/" + user.getId();
+        try {
+            ResponseEntity<java.util.List> response = restTemplate.getForEntity(url, java.util.List.class);
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error calling AI service: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/me/recommended-friends")
+    public ResponseEntity<?> getRecommendedFriends(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .or(() -> userRepository.findByEmail(userDetails.getUsername()))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        System.out.println("DEBUG: getRecommendedFriends called for user: " + user.getUsername() + " with ID: " + user.getId());
+        
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        String url = "http://ai-service:8000/social/recommendations/" + user.getId();
+        try {
+            ResponseEntity<java.util.List> response = restTemplate.getForEntity(url, java.util.List.class);
+            return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error calling AI service: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/{id}/ban")
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     public ResponseEntity<?> banUser(@PathVariable Long id) {

@@ -170,8 +170,12 @@ app.get('/trending/:roomId', (req, res) => {
 
 app.get('/rooms', (req, res) => {
     const rooms = [];
-    for (const [roomId] of roomMessages.entries()) {
-        rooms.push({ roomId, activeUsers: getRoomUsers(roomId).count });
+    const adapterRooms = io.sockets.adapter.rooms;
+    for (const [roomId, sockets] of adapterRooms.entries()) {
+        // Filtramos las salas que son IDs de sockets individuales
+        if (!io.sockets.sockets.has(roomId)) {
+            rooms.push({ roomId, activeUsers: sockets.size });
+        }
     }
     res.json(rooms);
 });
@@ -196,9 +200,9 @@ io.on('connection', (socket) => {
         try {
             let userResult;
             if (!isNaN(userId)) {
-                userResult = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+                userResult = await pool.query('SELECT r.name as role FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 LIMIT 1', [userId]);
             } else {
-                userResult = await pool.query('SELECT role FROM users WHERE username = $1', [userId]);
+                userResult = await pool.query('SELECT r.name as role FROM roles r JOIN user_roles ur ON r.id = ur.role_id JOIN users u ON ur.user_id = u.id WHERE u.username = $1 LIMIT 1', [userId]);
             }
 
             if (userResult.rows.length > 0) {
@@ -231,22 +235,30 @@ io.on('connection', (socket) => {
         // ─────────────────────────────────────────────
         // LOAD CHAT HISTORY (Last 50 messages)
         // ─────────────────────────────────────────────
-        try {
-            const historyResult = await pool.query(`
-                SELECT cm.id, cm.user_id as "userId", u.username, u.role, cm.content as text, 
-                       cm.created_at as timestamp, cm.game_id as "roomId"
-                FROM chat_messages cm
-                JOIN users u ON cm.user_id = u.id
-                WHERE cm.game_id = $1
-                ORDER BY cm.created_at DESC
-                LIMIT 50
-            `, [roomId]);
-            
-            // Reverse history to show chronological order
-            const history = historyResult.rows.reverse();
-            socket.emit('chat_history', { roomId, messages: history });
-        } catch (err) {
-            console.error('[Database] History fetch error:', err.message);
+        const numericRoomId = !isNaN(parseInt(roomId)) && String(parseInt(roomId)) === String(roomId);
+        if (numericRoomId) {
+            try {
+                const historyResult = await pool.query(`
+                    SELECT cm.id, cm.user_id as "userId", u.username, 
+                           (SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = u.id LIMIT 1) as role,
+                           cm.content as text, 
+                           cm.created_at as timestamp, cm.game_id as "roomId"
+                    FROM chat_messages cm
+                    JOIN users u ON cm.user_id = u.id
+                    WHERE cm.game_id = $1
+                    ORDER BY cm.created_at DESC
+                    LIMIT 50
+                `, [roomId]);
+                
+                // Reverse history to show chronological order
+                const history = historyResult.rows.reverse();
+                socket.emit('chat_history', { roomId, messages: history });
+            } catch (err) {
+                console.error('[Database] History fetch error:', err.message);
+            }
+        } else {
+            // Global / non-game rooms: send empty history
+            socket.emit('chat_history', { roomId, messages: [] });
         }
 
         socket.emit('trending_topics', { roomId, topics: getTrendingTopics(roomId) });

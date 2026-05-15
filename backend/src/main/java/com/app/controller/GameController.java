@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +28,10 @@ public class GameController {
     private final com.app.repository.UserRepository userRepository;
     private final com.app.repository.ReviewLikeRepository reviewLikeRepository;
     private final com.app.repository.FollowRepository followRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private GameController self;
 
     @GetMapping
     public ResponseEntity<PagedResponse<GameResponse>> getGames(
@@ -91,6 +96,18 @@ public class GameController {
                                     .build())
                             .collect(Collectors.toList());
 
+                    String sentimentSummary = null;
+                    try {
+                        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                        String url = "http://ai-service:8000/games/" + id + "/sentiment";
+                        java.util.Map<?, ?> response = restTemplate.getForObject(url, java.util.Map.class);
+                        if (response != null && response.containsKey("summary")) {
+                            sentimentSummary = (String) response.get("summary");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error calling AI service for sentiment: " + e.getMessage());
+                    }
+
                     return GameDetailResponse.builder()
                             .id(game.getId())
                             .title(game.getName())
@@ -109,6 +126,7 @@ public class GameController {
                             .publisher(game.getPublisher())
                             .officialWebsite(game.getOfficialWebsite())
                             .reviews(reviews)
+                            .sentimentSummary(sentimentSummary)
                             .build();
                 })
                 .map(ResponseEntity::ok)

@@ -15,4 +15,5 @@ import java.util.List;
 @NoArgsConstructor
 public class GameDetailResponse extends GameResponse {
     private List<ReviewDto> reviews;
+    private String sentimentSummary;
 }

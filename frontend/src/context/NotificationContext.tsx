@@ -22,10 +22,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     const token = getAccessToken();
-    const eventSource = new EventSource(`http://localhost:8080/api/v1/notifications/subscribe${token ? `?token=${token}` : ''}`);
+    const eventSource = new EventSource(`/api/v1/notifications/subscribe${token ? `?token=${token}` : ''}`);
 
     eventSource.addEventListener('notification', (event: any) => {
+      console.log('DEBUG: Received notification event:', event);
       const data = JSON.parse(event.data);
+      console.log('DEBUG: Parsed notification data:', data);
       const newNotification: AppNotification = {
         id: data.id,
         type: data.type,

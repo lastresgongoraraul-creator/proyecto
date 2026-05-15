@@ -23,19 +23,50 @@ public class ReviewController {
     private final ModerationService moderationService;
 
     @PostMapping
-    public ResponseEntity<Review> postReview(@Valid @RequestBody ReviewRequest request, Authentication authentication) {
+    public ResponseEntity<com.app.dto.ReviewDto> postReview(@Valid @RequestBody ReviewRequest request, Authentication authentication) {
         String userEmail = authentication.getName();
         Review review = reviewService.createReview(request, userEmail);
-        return ResponseEntity.ok(review);
+        
+        com.app.dto.ReviewDto dto = com.app.dto.ReviewDto.builder()
+                .id(review.getId())
+                .username(review.getUser().getUsername())
+                .score(review.getScore())
+                .comment(review.getComment())
+                .gameId(review.getGame().getId())
+                .gameTitle(review.getGame().getName())
+                .createdAt(review.getCreatedAt())
+                .userId(review.getUser().getId())
+                .likesCount(0L)
+                .liked(false)
+                .followingAuthor(false)
+                .build();
+                
+        return ResponseEntity.ok(dto);
     }
 
     @org.springframework.web.bind.annotation.PutMapping("/{id}")
-    public ResponseEntity<Review> updateReview(
+    public ResponseEntity<com.app.dto.ReviewDto> updateReview(
             @org.springframework.web.bind.annotation.PathVariable Long id,
             @Valid @RequestBody ReviewRequest request,
             Authentication authentication) {
         String userEmail = authentication.getName();
-        return ResponseEntity.ok(reviewService.updateReview(id, request, userEmail));
+        Review review = reviewService.updateReview(id, request, userEmail);
+        
+        com.app.dto.ReviewDto dto = com.app.dto.ReviewDto.builder()
+                .id(review.getId())
+                .username(review.getUser().getUsername())
+                .score(review.getScore())
+                .comment(review.getComment())
+                .gameId(review.getGame().getId())
+                .gameTitle(review.getGame().getName())
+                .createdAt(review.getCreatedAt())
+                .userId(review.getUser().getId())
+                .likesCount(0L)
+                .liked(false)
+                .followingAuthor(false)
+                .build();
+                
+        return ResponseEntity.ok(dto);
     }
 
     @org.springframework.web.bind.annotation.DeleteMapping("/{id}")

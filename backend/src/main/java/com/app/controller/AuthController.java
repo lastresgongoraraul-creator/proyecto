@@ -110,6 +110,7 @@ public class AuthController {
             }
             
             AuthResponse.UserDto userDto = AuthResponse.UserDto.builder()
+                    .id(user.getId())
                     .username(user.getUsername())
                     .email(user.getEmail())
                     .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
@@ -131,6 +132,7 @@ public class AuthController {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .user(AuthResponse.UserDto.builder()
+                        .id(user.getId())
                         .username(user.getUsername())
                         .email(user.getEmail())
                         .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))

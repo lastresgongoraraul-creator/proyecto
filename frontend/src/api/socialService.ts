@@ -73,3 +73,8 @@ export const postReport = async (reviewId: number, reason: string): Promise<void
 export const reportUser = async (userId: number): Promise<void> => {
   await api.post(`/social/report-user/${userId}`);
 };
+
+export const fetchFriendRecommendations = async (): Promise<{ id: number; username: string; overlap_count: number }[]> => {
+  const response = await api.get('/users/me/recommended-friends');
+  return response.data;
+};

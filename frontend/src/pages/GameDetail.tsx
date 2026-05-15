@@ -49,12 +49,21 @@ const GameDetail: React.FC = () => {
     enabled: !!id,
   });
 
+
   const reviewMutation = useMutation({
     mutationFn: (data: { score: number; comment: string }) => 
       postReview(Number(id), data.score, data.comment),
-    onSuccess: () => {
+    onSuccess: (newReview) => {
       setReviewScore(10);
       setReviewComment('');
+      queryClient.setQueryData(['game', id], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          reviews: [newReview, ...(oldData.reviews || [])],
+          totalReviews: (oldData.totalReviews || 0) + 1,
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ['game', id] });
     },
   });
@@ -243,6 +252,8 @@ const GameDetail: React.FC = () => {
                 <p className="font-bold text-lg">{game.avgScore != null ? game.avgScore.toFixed(1) : 'N/A'} / 10</p>
               </div>
             </div>
+
+
             
             <div className="flex items-center gap-2">
               <div className="bg-blue-500/20 p-2 rounded-lg">
@@ -390,7 +401,7 @@ const GameDetail: React.FC = () => {
                               )}
                             </div>
                             <div className="text-xs text-slate-500">
-                              {new Date(review.createdAt).toLocaleDateString()}
+                              {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Fecha desconocida'}
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -418,17 +429,19 @@ const GameDetail: React.FC = () => {
                                   >
                                     <Flag className="w-4 h-4" />
                                   </button>
-                                  <button
-                                    onClick={() => {
-                                      if (window.confirm('¿Estás seguro de que quieres reportar a este usuario? No podrá hablar por 24 horas.')) {
-                                        reportUserMutation.mutate(review.userId!);
-                                      }
-                                    }}
-                                    className="p-1 text-slate-500 hover:text-orange-400 transition-colors"
-                                    title="Reportar Usuario"
-                                  >
-                                    <UserX className="w-4 h-4" />
-                                  </button>
+                                  {user.role === 'ADMIN' && (
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm('¿Estás seguro de que quieres reportar a este usuario? No podrá hablar por 24 horas.')) {
+                                          reportUserMutation.mutate(review.userId!);
+                                        }
+                                      }}
+                                      className="p-1 text-slate-500 hover:text-orange-400 transition-colors"
+                                      title="Reportar Usuario"
+                                    >
+                                      <UserX className="w-4 h-4" />
+                                    </button>
+                                  )}
                                 </div>
                               )}
                              {user && (user.username === review.username || user.role === 'ADMIN') && (

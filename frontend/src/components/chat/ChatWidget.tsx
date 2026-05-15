@@ -16,7 +16,7 @@ const ChatWidget: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const socket = io('http://localhost:3001');
+    const socket = io(window.location.origin, { path: '/socket.io' });
     socketRef.current = socket;
 
     socket.on('connect', () => {

@@ -75,9 +75,9 @@ public class CommunityService {
             community.put("gameThumbnail", game.getCoverUrl() != null ? game.getCoverUrl() : "");
             community.put("gameGenre", game.getPrimaryGenre() != null ? game.getPrimaryGenre() : "Action");
             community.put("avgScore", game.getAvgScore());
-            community.put("activeUsers", random.nextInt(40) + 5);
+            community.put("activeUsers", 0);
             community.put("joined", joined);
-            community.put("totalMembers", communityMemberRepository.countByGame(game) + (game.getId() % 50 + 100));
+            community.put("totalMembers", communityMemberRepository.countByGame(game));
             return community;
         }).collect(Collectors.toList());
     }

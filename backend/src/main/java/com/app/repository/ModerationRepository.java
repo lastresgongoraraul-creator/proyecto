@@ -11,4 +11,5 @@ import java.util.List;
 public interface ModerationRepository extends JpaRepository<ModerationTicket, Long> {
     List<ModerationTicket> findByStatus(ModerationStatus status);
     long countByReviewId(Long reviewId);
+    boolean existsByReviewIdAndReporterId(Long reviewId, Long reporterId);
 }

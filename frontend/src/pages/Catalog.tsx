@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchGames, postCreateGame } from '../api/gameService';
-import { fetchActivity } from '../api/socialService';
+import { fetchGames, postCreateGame, fetchUserRecommendations } from '../api/gameService';
+import { fetchActivity, fetchFriendRecommendations, followUser } from '../api/socialService';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
@@ -52,6 +52,8 @@ const Catalog: React.FC = () => {
     officialWebsite: '',
     platforms: [] as string[]
   });
+
+  const [showFriendRecs, setShowFriendRecs] = useState(false);
 
   const createGameMutation = useMutation({
     mutationFn: (game: any) => postCreateGame({ ...game, genres: [game.primaryGenre] }),
@@ -109,17 +111,51 @@ const Catalog: React.FC = () => {
     }
   }, [isVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'feed'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'feed' | 'recommendations'>(user ? 'recommendations' : 'catalog');
   const { data: activity, isLoading: isActivityLoading } = useQuery({
     queryKey: ['activity'],
     queryFn: fetchActivity,
     enabled: activeTab === 'feed',
   });
 
+  const { data: recommendations, isLoading: isRecsLoading } = useQuery({
+    queryKey: ['recommendations', user?.id],
+    queryFn: () => fetchUserRecommendations(),
+    enabled: activeTab === 'recommendations' && !!user,
+  });
+
+  const { data: friendRecs, isLoading: isFriendRecsLoading } = useQuery({
+    queryKey: ['friendRecommendations', user?.id],
+    queryFn: () => fetchFriendRecommendations(),
+    enabled: !!user,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: (userId: number) => followUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['friendRecommendations'] });
+      alert('¡Ahora sigues a este usuario!');
+    },
+  });
+
+  console.log('DEBUG: Catalog render', { activeTab, user: user?.username });
   return (
     <div className="space-y-8">
       {/* Tabs */}
       <div className="flex gap-8 border-b border-white/10">
+        {user && (
+          <button
+            onClick={() => setActiveTab('recommendations')}
+            className={`pb-4 text-sm font-bold transition-all relative ${
+              activeTab === 'recommendations' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Para Ti
+            {activeTab === 'recommendations' && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
+            )}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('catalog')}
           className={`pb-4 text-sm font-bold transition-all relative ${
@@ -144,7 +180,79 @@ const Catalog: React.FC = () => {
         </button>
       </div>
 
-      {activeTab === 'catalog' ? (
+      {activeTab === 'recommendations' ? (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          {/* Widget 'Gente que deberías seguir' - Ahora por encima y desplegable */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-4 space-y-4">
+            <button
+              onClick={() => setShowFriendRecs(!showFriendRecs)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <div>
+                <h3 className="text-lg font-bold text-white">Gente que deberías seguir</h3>
+                <p className="text-slate-500 text-xs">Basado en gustos similares</p>
+              </div>
+              <span className="text-slate-400 text-sm font-medium">
+                {showFriendRecs ? 'Ocultar' : 'Mostrar'}
+              </span>
+            </button>
+            
+            {showFriendRecs && (
+              <div className="animate-in fade-in duration-300">
+                {isFriendRecsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                  </div>
+                ) : friendRecs && friendRecs.length > 0 ? (
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {friendRecs.map((friend: any) => (
+                      <div key={friend.id} className="bg-white/5 p-4 rounded-xl border border-white/5 min-w-[200px] flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-lg">
+                          {friend.username?.[0]?.toUpperCase()}
+                        </div>
+                        <p className="font-medium text-white">@{friend.username}</p>
+                        <p className="text-xs text-slate-500">{friend.overlap_count} juegos en común</p>
+                        <button
+                          onClick={() => followMutation.mutate(friend.id)}
+                          className="mt-2 w-full px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-medium transition-colors"
+                          disabled={followMutation.isPending}
+                        >
+                          {followMutation.isPending ? 'Siguiendo...' : 'Seguir'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm text-center py-2">No hay sugerencias por ahora.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white">Juegos Recomendados para Ti</h2>
+            <p className="text-slate-400 text-sm">Basado en tus gustos y actividad.</p>
+          </div>
+          
+          {isRecsLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+              <p className="text-slate-400">Generando tus recomendaciones personalizadas...</p>
+            </div>
+          ) : recommendations && recommendations.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {recommendations.map((game: Game) => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-dashed border-white/10">
+              <p className="text-slate-400 text-lg">No hay recomendaciones disponibles todavía.</p>
+              <p className="text-slate-500">¡Escribe reseñas para que podamos conocer tus gustos!</p>
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'catalog' ? (
         <>
           {user && user.role === 'ADMIN' && (
             <div className="flex justify-end mb-4">

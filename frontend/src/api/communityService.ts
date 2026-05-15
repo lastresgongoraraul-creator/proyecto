@@ -20,25 +20,48 @@ export interface JoinedCommunity {
 
 /** GET /communities — lista de juegos con salas activas y conteo en vivo */
 export const fetchCommunities = async (): Promise<CommunityGame[]> => {
+  let communities: CommunityGame[] = [];
   try {
     const response = await api.get('/communities');
-    return response.data;
+    communities = response.data;
   } catch {
     // Fallback: obtenemos los juegos populares del catálogo y los convertimos
     const response = await api.get('/games?size=20');
     const data = response.data;
     const games = Array.isArray(data) ? data : data?.content ?? [];
-    return games.map((g: any) => ({
+    communities = games.map((g: any) => ({
       gameId: String(g.id),
       gameTitle: g.title,
       gameThumbnail: g.thumbnail,
       gameGenre: g.genre,
       avgScore: g.avgScore ?? 0,
-      activeUsers: Math.floor(Math.random() * 40) + 3,
+      activeUsers: 0,
       joined: false,
-      totalMembers: Math.floor(Math.random() * 200) + 50,
+      totalMembers: 0,
     }));
   }
+
+  // Fetch active users from chat service
+  try {
+    const chatRoomsResponse = await fetch('/chat/rooms');
+    if (chatRoomsResponse.ok) {
+      const chatRooms = await chatRoomsResponse.json();
+      const roomCounts = new Map<string, number>();
+      chatRooms.forEach((room: any) => {
+        const id = String(room.roomId).replace('game-', '');
+        roomCounts.set(id, room.activeUsers);
+      });
+
+      communities = communities.map(c => ({
+        ...c,
+        activeUsers: roomCounts.get(String(c.gameId)) || 0
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching chat rooms:', error);
+  }
+
+  return communities;
 };
 
 /** POST /communities/:gameId/join */

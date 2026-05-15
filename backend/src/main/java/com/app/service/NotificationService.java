@@ -44,6 +44,7 @@ public class NotificationService {
 
         SseEmitter emitter = emitters.get(recipient.getId());
         if (emitter != null) {
+            System.out.println("DEBUG: Sending notification to user " + recipient.getId() + " of type " + type);
             try {
                 emitter.send(SseEmitter.event()
                         .name("notification")
