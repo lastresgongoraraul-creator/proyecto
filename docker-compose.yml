@@ -71,13 +71,22 @@ services:
     build: ./chat-service
     container_name: chat-service
     ports:
-      - "${CHAT_PORT}:4000"
+      - "${CHAT_PORT:-3001}:3001"
     environment:
+      PORT: 3001
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      AI_SERVICE_URL: http://ai-service:8000
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:

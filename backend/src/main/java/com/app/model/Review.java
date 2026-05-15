@@ -40,4 +40,7 @@ public class Review {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private ZonedDateTime createdAt;
+
+    @Column(columnDefinition = "vector(384)", insertable = false, updatable = false)
+    private String embedding;
 }

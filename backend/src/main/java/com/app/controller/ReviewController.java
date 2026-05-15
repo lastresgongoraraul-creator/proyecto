@@ -1,7 +1,9 @@
 package com.app.controller;
 
+import com.app.dto.ReportRequest;
 import com.app.dto.ReviewRequest;
 import com.app.model.Review;
+import com.app.service.ModerationService;
 import com.app.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final ModerationService moderationService;
 
     @PostMapping
     public ResponseEntity<Review> postReview(@Valid @RequestBody ReviewRequest request, Authentication authentication) {
@@ -42,5 +45,14 @@ public class ReviewController {
         String userEmail = authentication.getName();
         reviewService.deleteReview(id, userEmail);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/report")
+    public ResponseEntity<Void> reportReview(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @Valid @RequestBody ReportRequest request,
+            Authentication authentication) {
+        moderationService.reportReview(id, authentication.getName(), request.getReason());
+        return ResponseEntity.ok().build();
     }
 }

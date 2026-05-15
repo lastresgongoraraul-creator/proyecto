@@ -6,6 +6,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -29,7 +31,11 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        return generateToken(new HashMap<>(), userPrincipal.getUsername(), accessExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userPrincipal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        return generateToken(claims, userPrincipal.getUsername(), accessExpiration);
     }
 
     public String generateRefreshToken(Authentication authentication) {

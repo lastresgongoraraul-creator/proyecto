@@ -16,5 +16,11 @@ public class ReviewDto {
     private String username;
     private Integer score;
     private String comment;
+    private Long gameId;
+    private String gameTitle;
     private ZonedDateTime createdAt;
+    private Long userId;
+    private Long likesCount;
+    private boolean liked;
+    private boolean followingAuthor;
 }

@@ -54,7 +54,7 @@ public class Game {
     @Column(name = "cover_url", length = 512)
     private String coverUrl;
 
-    @Column(columnDefinition = "vector(384)")
+    @Column(columnDefinition = "vector(384)", insertable = false)
     private String embedding;
 
     @Column(name = "pegi", length = 20)
@@ -71,6 +71,9 @@ public class Game {
 
     @Column(name = "official_website", length = 512)
     private String officialWebsite;
+
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Review> reviews;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
