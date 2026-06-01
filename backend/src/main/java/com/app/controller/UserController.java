@@ -71,7 +71,7 @@ public class UserController {
         System.out.println("DEBUG: getRecommendedGames called for user: " + user.getUsername() + " with ID: " + user.getId());
         
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-        String url = "http://ai-service:8000/recommendations/user/" + user.getId();
+        String url = "http://ai-service.internal:8000/recommendations/user/" + user.getId();
         try {
             ResponseEntity<java.util.List> response = restTemplate.getForEntity(url, java.util.List.class);
             return ResponseEntity.ok(response.getBody());
@@ -104,7 +104,7 @@ public class UserController {
         System.out.println("DEBUG: getRecommendedFriends called for user: " + user.getUsername() + " with ID: " + user.getId());
         
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-        String url = "http://ai-service:8000/social/recommendations/" + user.getId();
+        String url = "http://ai-service.internal:8000/social/recommendations/" + user.getId();
         try {
             ResponseEntity<java.util.List> response = restTemplate.getForEntity(url, java.util.List.class);
             return ResponseEntity.ok(response.getBody());

@@ -11,7 +11,17 @@ from app.api.games import router as games_router
 from app.api.social import router as social_router
 from app.api.recommendations import router as recommendations_router
 from fastapi.middleware.cors import CORSMiddleware
+import threading
+import subprocess
 
+def run_update_embeddings():
+    try:
+        print("Starting background embedding update...")
+        # Since main.py is in app/, we need to run scripts/update_embeddings.py from the parent directory
+        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "update_embeddings.py")
+        subprocess.run(["python", script_path])
+    except Exception as e:
+        print(f"Error running update embeddings: {e}")
 app = FastAPI(
     title="AI Service",
     description="Service for game recommendations and embeddings",
@@ -29,6 +39,12 @@ app.add_middleware(
 app.include_router(games_router)
 app.include_router(social_router)
 app.include_router(recommendations_router)
+
+@app.on_event("startup")
+def startup_event():
+    thread = threading.Thread(target=run_update_embeddings)
+    thread.daemon = True
+    thread.start()
 
 @app.exception_handler(AIException)
 async def ai_exception_handler(request: Request, exc: AIException):

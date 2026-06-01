@@ -110,7 +110,7 @@ public class GameController {
         String sentimentSummary = null;
         try {
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-            String url = "http://ai-service:8000/games/" + id + "/sentiment";
+            String url = "http://ai-service.internal:8000/games/" + id + "/sentiment";
             java.util.Map<?, ?> response = restTemplate.getForObject(url, java.util.Map.class);
             if (response != null && response.containsKey("summary")) {
                 sentimentSummary = (String) response.get("summary");

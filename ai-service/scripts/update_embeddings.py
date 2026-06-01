@@ -25,8 +25,10 @@ def update_all_embeddings():
     for game in games:
         # Check if embedding is zero-filled (as in the V9 migration)
         # In pgvector, we can check if it's all zeros. 
-        # A simple way is to check if it matches a zero vector or if we just want to re-generate everything.
-        # Let's re-generate for everyone to be safe and ensure consistency.
+        if game.embedding is not None:
+            is_zero = all(abs(x) < 1e-6 for x in game.embedding)
+            if not is_zero:
+                continue
         
         print(f"🧠 Generating embedding for: {game.name}...")
         
