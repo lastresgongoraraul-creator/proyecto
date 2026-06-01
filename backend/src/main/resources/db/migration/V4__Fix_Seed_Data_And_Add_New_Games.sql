@@ -33,7 +33,7 @@ VALUES
     'Action', 
     ARRAY['Action', 'Adventure', 'Sci-Fi'], 
     ARRAY['PC', 'PlayStation 5', 'Xbox Series X'], 
-    2024, 
+    2026, 
     'Pragmata es un título de aventura de acción de ciencia ficción ambientado en un futuro cercano en el mundo lunar de la Tierra, que ofrece una visión del futuro con una atmósfera profunda.', 
     0.0, 
     0, 

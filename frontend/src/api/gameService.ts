@@ -68,9 +68,45 @@ export const fetchSimilarGames = async (id: string, minScore: number = 0): Promi
     thumbnail: g.cover_url,
     genre: g.primary_genre,
     platform: g.platforms && g.platforms.length > 0 ? g.platforms[0] : 'N/A',
+    platforms: g.platforms || [],
     releaseYear: g.release_year,
     avgScore: g.avg_score,
+    totalReviews: 0,
   }));
+};
+
+export const fetchUserRecommendations = async (): Promise<Game[]> => {
+  const response = await api.get('/users/me/recommended-games');
+  return response.data.map((g: any) => ({
+    id: g.id.toString(),
+    title: g.name,
+    description: g.summary,
+    thumbnail: g.cover_url,
+    genre: g.primary_genre,
+    platform: g.platforms && g.platforms.length > 0 ? g.platforms[0] : 'N/A',
+    platforms: g.platforms || [],
+    releaseYear: g.release_year,
+    avgScore: g.avg_score,
+    totalReviews: 0,
+  }));
+};
+
+export const fetchGameSentiment = async (gameId: string): Promise<{ positive: number; negative: number }> => {
+  try {
+    const response = await fetch(`http://localhost:8000/games/${gameId}/sentiment`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch game sentiment');
+    }
+    const data = await response.json();
+    return {
+      positive: data.positive_percentage || 0,
+      negative: data.negative_percentage || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching game sentiment:', error);
+    // Fallback mock data
+    return { positive: 85, negative: 15 };
+  }
 };
 
 export const postReview = async (gameId: number, score: number, comment: string): Promise<any> => {
@@ -85,5 +121,19 @@ export const updateReview = async (id: number, gameId: number, score: number, co
 
 export const deleteReview = async (id: number): Promise<any> => {
   const response = await api.delete(`/reviews/${id}`);
+  return response.data;
+};
+
+export const postCreateGame = async (game: any): Promise<Game> => {
+  const response = await api.post('/games', game);
+  return response.data;
+};
+
+export const deleteGame = async (id: string): Promise<void> => {
+  await api.delete(`/games/${id}`);
+};
+
+export const putUpdateGame = async (id: string, game: any): Promise<Game> => {
+  const response = await api.put(`/games/${id}`, game);
   return response.data;
 };

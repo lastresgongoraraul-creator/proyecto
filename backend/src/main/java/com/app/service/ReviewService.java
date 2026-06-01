@@ -19,11 +19,17 @@ public class ReviewService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final GameService gameService;
+    private final AIService aiService;
+    private final ModerationService moderationService;
 
     @Transactional
     public Review createReview(ReviewRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if ("MUTED".equals(user.getStatus()) && user.getMutedUntil() != null && user.getMutedUntil().isAfter(java.time.ZonedDateTime.now())) {
+            throw new RuntimeException("You are muted and cannot post reviews until " + user.getMutedUntil());
+        }
 
         if (reviewRepository.existsByGameIdAndUserId(request.getGameId(), user.getId())) {
             throw new RuntimeException("User has already reviewed this game");
@@ -32,7 +38,10 @@ public class ReviewService {
         Game game = gameRepository.findById(request.getGameId())
                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
-        // Atomic update of game score (do this BEFORE saving review to acquire FOR UPDATE lock before FOR KEY SHARE lock)
+        // AI Moderation check
+        boolean isOffensive = aiService.checkModeration(request.getComment());
+
+        // Atomic update of game score
         gameService.updateGameScore(game.getId(), request.getScore());
 
         Review review = Review.builder()
@@ -43,6 +52,15 @@ public class ReviewService {
                 .build();
 
         Review savedReview = reviewRepository.save(review);
+
+        // If offensive, auto-report and flag
+        if (isOffensive) {
+            moderationService.reportReview(savedReview.getId(), "SYSTEM", "Automatic AI detection: Offensive language");
+        }
+
+        // Generate embedding and update user profile (Asynchronously would be better, but we'll call them here for simplicity)
+        aiService.generateReviewEmbedding(savedReview.getId());
+        aiService.updateUserEmbedding(user.getId());
 
         return savedReview;
     }
@@ -71,7 +89,11 @@ public class ReviewService {
         Review review = reviewRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
 
-        if (!review.getUser().getEmail().equals(userEmail)) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(r -> r.getName().equals("ADMIN"));
+
+        if (!review.getUser().getEmail().equals(userEmail) && !isAdmin) {
             throw new RuntimeException("You are not authorized to delete this review");
         }
 

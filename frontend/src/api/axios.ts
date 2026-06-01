@@ -1,16 +1,23 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: '/api/v1',
   withCredentials: true, // Required for cookies
 });
 
-// Store accessToken in memory
-let memoryToken: string | null = null;
+// Store accessToken in memory and localStorage
+let memoryToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
 export const setAccessToken = (token: string | null) => {
   memoryToken = token;
+  if (token) {
+    localStorage.setItem('accessToken', token);
+  } else {
+    localStorage.removeItem('accessToken');
+  }
 };
+
+export const getAccessToken = () => memoryToken;
 
 api.interceptors.request.use(
   (config) => {

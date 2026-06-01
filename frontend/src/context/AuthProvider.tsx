@@ -14,12 +14,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      if (user?.id) {
+        const chatUrl = `http://${window.location.hostname}:3001/clear-session/${user.id}`;
+        await fetch(chatUrl, { method: 'POST' }).catch(err => console.error('Clear chat session error', err));
+      }
       await api.post('/auth/logout');
     } catch (e) {
       console.error('Logout error', e);
     } finally {
       setAccessToken(null);
       setUser(null);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      setUser(response.data.user);
+    } catch {
+      // silently ignore
     }
   };
 
@@ -39,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

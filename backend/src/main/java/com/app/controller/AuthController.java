@@ -5,6 +5,7 @@ import com.app.dto.AuthResponse;
 import com.app.dto.RefreshRequest;
 import com.app.model.Role;
 import com.app.model.User;
+import com.app.repository.RoleRepository;
 import com.app.repository.UserRepository;
 import com.app.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
@@ -35,11 +37,14 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
 
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Default role USER not found"));
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .roles(new java.util.HashSet<>(java.util.Collections.singletonList(userRole)))
                 .build();
 
         userRepository.save(user);
@@ -105,9 +110,11 @@ public class AuthController {
             }
             
             AuthResponse.UserDto userDto = AuthResponse.UserDto.builder()
+                    .id(user.getId())
                     .username(user.getUsername())
                     .email(user.getEmail())
-                    .role(user.getRole().name())
+                    .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                    .avatarUrl(user.getAvatarUrl())
                     .build();
             
             java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -126,9 +133,11 @@ public class AuthController {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .user(AuthResponse.UserDto.builder()
+                        .id(user.getId())
                         .username(user.getUsername())
                         .email(user.getEmail())
-                        .role(user.getRole().name())
+                        .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                        .avatarUrl(user.getAvatarUrl())
                         .build())
                 .build();
     }

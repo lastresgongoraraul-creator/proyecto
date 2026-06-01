@@ -1,4 +1,14 @@
 services:
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+      - chat-service
+
   postgres:
     image: pgvector/pgvector:pg16
     container_name: postgres-db
@@ -6,8 +16,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +27,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis-cache
-    ports:
-      - "${REDIS_PORT}:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -30,8 +37,6 @@ services:
   backend:
     build: ./backend
     container_name: backend-service
-    ports:
-      - "${BACK_PORT}:8080"
     environment:
       DB_URL: jdbc:postgresql://postgres:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-app_db}
       DB_USERNAME: ${POSTGRES_USER:-postgres}
@@ -47,8 +52,6 @@ services:
   frontend:
     build: ./frontend
     container_name: frontend-service
-    ports:
-      - "80:80"
     depends_on:
       - backend
 
@@ -56,7 +59,7 @@ services:
     build: ./ai-service
     container_name: ai-service
     ports:
-      - "${AI_PORT}:8000"
+      - "8000:8000"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -70,14 +73,23 @@ services:
   chat-service:
     build: ./chat-service
     container_name: chat-service
-    ports:
-      - "${CHAT_PORT}:4000"
     environment:
+      PORT: 3001
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      AI_SERVICE_URL: http://ai-service:8000
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:

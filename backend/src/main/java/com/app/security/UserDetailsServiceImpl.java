@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,10 +24,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .or(() -> userRepository.findByUsername(emailOrUsername))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + emailOrUsername));
 
+        if ("BANNED".equals(user.getStatus())) {
+            throw new UsernameNotFoundException("User is banned");
+        }
+
         return new User(
                 user.getEmail(),
                 user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                user.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                        .collect(Collectors.toList())
         );
     }
 }
