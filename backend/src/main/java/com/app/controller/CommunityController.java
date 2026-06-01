@@ -45,7 +45,10 @@ public class CommunityController {
     }
 
     @GetMapping("/{gameId}/messages")
-    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable Long gameId) {
-        return ResponseEntity.ok(communityService.getChatHistory(gameId));
+    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(
+            @PathVariable Long gameId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        return ResponseEntity.ok(communityService.getChatHistory(gameId, username));
     }
 }

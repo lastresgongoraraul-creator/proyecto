@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { fetchGames, postCreateGame, fetchUserRecommendations } from '../api/gameService';
-import { fetchActivity, fetchFriendRecommendations, followUser } from '../api/socialService';
+import { fetchActivity, fetchFriendRecommendations, followUser, searchUsers } from '../api/socialService';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import GameCard from '../components/GameCard';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { Search, Loader2, Ghost, Star, Users } from 'lucide-react';
 import type { Game, GamePage, Review } from '../types';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 const GENRE_MAP: Record<string, string> = {
   'Acción': 'Acción',
@@ -111,7 +112,21 @@ const Catalog: React.FC = () => {
     }
   }, [isVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const [activeTab, setActiveTab] = useState<'catalog' | 'feed' | 'recommendations'>(user ? 'recommendations' : 'catalog');
+  const [searchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as 'catalog' | 'feed' | 'recommendations' | 'search_users') || (user ? 'recommendations' : 'catalog');
+  const [userSearch, setUserSearch] = useState('');
+  const [debouncedUserSearch, setDebouncedUserSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedUserSearch(userSearch), 500);
+    return () => clearTimeout(timer);
+  }, [userSearch]);
+
+  const { data: userResults, isLoading: isUserSearching } = useQuery({
+    queryKey: ['userSearch', debouncedUserSearch],
+    queryFn: () => searchUsers(debouncedUserSearch),
+    enabled: activeTab === 'search_users' && !!debouncedUserSearch,
+  });
   const { data: activity, isLoading: isActivityLoading } = useQuery({
     queryKey: ['activity'],
     queryFn: fetchActivity,
@@ -141,116 +156,86 @@ const Catalog: React.FC = () => {
   console.log('DEBUG: Catalog render', { activeTab, user: user?.username });
   return (
     <div className="space-y-8">
-      {/* Tabs */}
-      <div className="flex gap-8 border-b border-white/10">
-        {user && (
-          <button
-            onClick={() => setActiveTab('recommendations')}
-            className={`pb-4 text-sm font-bold transition-all relative ${
-              activeTab === 'recommendations' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            Para Ti
-            {activeTab === 'recommendations' && (
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
-            )}
-          </button>
-        )}
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={`pb-4 text-sm font-bold transition-all relative ${
-            activeTab === 'catalog' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
-          }`}
-        >
-          Explorar Juegos
-          {activeTab === 'catalog' && (
-            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('feed')}
-          className={`pb-4 text-sm font-bold transition-all relative ${
-            activeTab === 'feed' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
-          }`}
-        >
-          Siguiendo
-          {activeTab === 'feed' && (
-            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500" />
-          )}
-        </button>
-      </div>
 
       {activeTab === 'recommendations' ? (
         <div className="space-y-6 animate-in fade-in duration-500">
-          {/* Widget 'Gente que deberías seguir' - Ahora por encima y desplegable */}
-          <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-4 space-y-4">
-            <button
-              onClick={() => setShowFriendRecs(!showFriendRecs)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <div>
-                <h3 className="text-lg font-bold text-white">Gente que deberías seguir</h3>
-                <p className="text-slate-500 text-xs">Basado en gustos similares</p>
-              </div>
-              <span className="text-slate-400 text-sm font-medium">
-                {showFriendRecs ? 'Ocultar' : 'Mostrar'}
-              </span>
-            </button>
-            
-            {showFriendRecs && (
-              <div className="animate-in fade-in duration-300">
-                {isFriendRecsLoading ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-                  </div>
-                ) : friendRecs && friendRecs.length > 0 ? (
-                  <div className="flex gap-4 overflow-x-auto pb-2">
-                    {friendRecs.map((friend: any) => (
-                      <div key={friend.id} className="bg-white/5 p-4 rounded-xl border border-white/5 min-w-[200px] flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-lg">
-                          {friend.username?.[0]?.toUpperCase()}
+          <ErrorBoundary fallbackMessage="La lista de gente a la que seguir no está disponible en este momento.">
+            {/* Widget 'Gente que deberías seguir' - Ahora por encima y desplegable */}
+            <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-4 space-y-4">
+              <button
+                onClick={() => setShowFriendRecs(!showFriendRecs)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div>
+                  <h3 className="text-lg font-bold text-white">Gente que deberías seguir</h3>
+                  <p className="text-slate-500 text-xs">Basado en gustos similares</p>
+                </div>
+                <span className="text-slate-400 text-sm font-medium">
+                  {showFriendRecs ? 'Ocultar' : 'Mostrar'}
+                </span>
+              </button>
+              
+              {showFriendRecs && (
+                <div className="animate-in fade-in duration-300">
+                  {isFriendRecsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    </div>
+                  ) : friendRecs && friendRecs.length > 0 ? (
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {friendRecs.map((friend: any) => (
+                        <div key={friend.id} className="bg-white/5 p-4 rounded-xl border border-white/5 min-w-[200px] flex flex-col items-center gap-2">
+                          <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden">
+                            {friend.avatarUrl ? (
+                              <img src={friend.avatarUrl} alt={friend.username} className="w-full h-full object-cover" />
+                            ) : (
+                              friend.username?.[0]?.toUpperCase()
+                            )}
+                          </div>
+                          <p className="font-medium text-white">@{friend.username}</p>
+                          <p className="text-xs text-slate-500">{friend.overlap_count} juegos en común</p>
+                          <button
+                            onClick={() => followMutation.mutate(friend.id)}
+                            className="mt-2 w-full px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-medium transition-colors"
+                            disabled={followMutation.isPending}
+                          >
+                            {followMutation.isPending ? 'Siguiendo...' : 'Seguir'}
+                          </button>
                         </div>
-                        <p className="font-medium text-white">@{friend.username}</p>
-                        <p className="text-xs text-slate-500">{friend.overlap_count} juegos en común</p>
-                        <button
-                          onClick={() => followMutation.mutate(friend.id)}
-                          className="mt-2 w-full px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-medium transition-colors"
-                          disabled={followMutation.isPending}
-                        >
-                          {followMutation.isPending ? 'Siguiendo...' : 'Seguir'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-sm text-center py-2">No hay sugerencias por ahora.</p>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-sm text-center py-2">No hay sugerencias por ahora.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </ErrorBoundary>
+
+          <ErrorBoundary fallbackMessage="Tus recomendaciones personalizadas de juegos no se pueden cargar ahora mismo. ¡Nuestro equipo está en ello!">
+            <div>
+              <h2 className="text-xl font-bold text-white">Juegos Recomendados para Ti</h2>
+              <p className="text-slate-400 text-sm">Basado en tus gustos y actividad.</p>
+            </div>
+            
+            {isRecsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+                <p className="text-slate-400">Generando tus recomendaciones personalizadas...</p>
+              </div>
+            ) : recommendations && recommendations.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4">
+                {recommendations.map((game: Game) => (
+                  <GameCard key={game.id} game={game} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-dashed border-white/10 mt-4">
+                <p className="text-slate-400 text-lg">No hay recomendaciones disponibles todavía.</p>
+                <p className="text-slate-500">¡Escribe reseñas para que podamos conocer tus gustos!</p>
               </div>
             )}
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold text-white">Juegos Recomendados para Ti</h2>
-            <p className="text-slate-400 text-sm">Basado en tus gustos y actividad.</p>
-          </div>
-          
-          {isRecsLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-              <p className="text-slate-400">Generando tus recomendaciones personalizadas...</p>
-            </div>
-          ) : recommendations && recommendations.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {recommendations.map((game: Game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-dashed border-white/10">
-              <p className="text-slate-400 text-lg">No hay recomendaciones disponibles todavía.</p>
-              <p className="text-slate-500">¡Escribe reseñas para que podamos conocer tus gustos!</p>
-            </div>
-          )}
+          </ErrorBoundary>
         </div>
       ) : activeTab === 'catalog' ? (
         <>
@@ -264,8 +249,8 @@ const Catalog: React.FC = () => {
               </button>
             </div>
           )}
-          <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex-1 space-y-2">
+      <div className="flex flex-col md:flex-row gap-4 items-end animate-in fade-in slide-in-from-top-4 duration-500 w-full">
+        <div className="flex-1 w-full space-y-2">
           <label className="text-sm font-medium text-slate-400">Buscar Juegos</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
@@ -313,7 +298,7 @@ const Catalog: React.FC = () => {
             setGenre('');
             setPlatform('');
           }}
-          className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
+          className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors"
         >
           Limpiar
         </button>
@@ -329,7 +314,7 @@ const Catalog: React.FC = () => {
           <p className="text-red-400">Error al cargar los juegos. ¿Está el backend ejecutándose?</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {data?.pages?.map((page: GamePage) => (
             page?.content?.map((game: Game) => (
               <GameCard key={game.id} game={game} />
@@ -355,6 +340,55 @@ const Catalog: React.FC = () => {
         )}
       </div>
     </>
+      ) : activeTab === 'search_users' ? (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="max-w-xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre de usuario..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="max-w-xl mx-auto space-y-4">
+            {isUserSearching ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+              </div>
+            ) : userResults && userResults.length > 0 ? (
+              userResults.map((u: any) => (
+                <div key={u.id} className="bg-slate-900 border border-white/10 rounded-xl p-4 flex items-center justify-between hover:border-indigo-500/30 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-bold overflow-hidden">
+                      {u.avatarUrl ? (
+                        <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                      ) : (
+                        u.username[0].toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold">@{u.username}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link to={`/profile/${u.username}`} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-white/5 transition-all">
+                      Ver Perfil
+                    </Link>
+                  </div>
+                </div>
+              ))
+            ) : userSearch && (
+              <div className="text-center py-10 text-slate-500">
+                No se encontraron usuarios.
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="max-w-2xl mx-auto space-y-6">
@@ -367,8 +401,12 @@ const Catalog: React.FC = () => {
               activity.map((item: Review) => (
                 <div key={item.id} className="bg-slate-900 border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition-all group">
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-bold">
-                      {item.username?.[0]?.toUpperCase()}
+                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-bold overflow-hidden">
+                      {item.avatarUrl ? (
+                        <img src={item.avatarUrl} alt={item.username} className="w-full h-full object-cover" />
+                      ) : (
+                        item.username?.[0]?.toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p className="font-bold">

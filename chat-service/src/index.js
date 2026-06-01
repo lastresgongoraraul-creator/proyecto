@@ -16,6 +16,18 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', service: 'chat-service' });
 });
 
+app.post('/clear-session/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        await pool.query('UPDATE users SET chat_cleared_at = CURRENT_TIMESTAMP WHERE id = $1', [userId]);
+        console.log(`[REST] User ${userId} cleared session chat history.`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Database] REST Session clear error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -27,7 +39,7 @@ const PORT = process.env.PORT || 3001;
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://ai-service:8000';
 
 // ─────────────────────────────────────────────
-// DATABASE SETUP
+// DATABASE SETUP & MIGRATIONS
 // ─────────────────────────────────────────────
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -38,16 +50,20 @@ pool.on('error', (err) => {
     console.error('[Database] Unexpected error on idle client', err);
 });
 
-async function testDbConnection() {
+async function runMigrations() {
     try {
         const client = await pool.connect();
         console.log('[Database] Connected successfully to PostgreSQL');
+        await client.query(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS chat_cleared_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+        `);
+        console.log('[Database] Migration ran successfully: verified/created users.chat_cleared_at.');
         client.release();
     } catch (err) {
-        console.error('[Database] Connection error:', err.message);
+        console.error('[Database] Migration/Connection error:', err.message);
     }
 }
-testDbConnection();
+runMigrations();
 
 // ─────────────────────────────────────────────
 // ASYNC MODERATION QUEUE
@@ -139,6 +155,7 @@ function getTrendingTopics(roomId) {
 const activeUsers = new Map(); // userId -> socketId
 const userRooms = new Map(); // socketId -> Set<roomId>
 const socketUsernames = new Map(); // socketId -> username
+const socketAvatars = new Map(); // socketId -> avatarUrl
 const userRoles = new Map(); // userId -> role
 
 function getRoomUsers(roomId) {
@@ -147,12 +164,13 @@ function getRoomUsers(roomId) {
     const users = [];
     for (const socketId of room) {
         const username = socketUsernames.get(socketId) || 'Usuario';
+        const avatarUrl = socketAvatars.get(socketId) || '';
         let foundUserId = null;
         for (const [uid, sid] of activeUsers.entries()) {
             if (sid === socketId) { foundUserId = uid; break; }
         }
         const role = userRoles.get(String(foundUserId)) || 'USER';
-        users.push({ userId: foundUserId, username, role });
+        users.push({ userId: foundUserId, username, role, avatarUrl });
     }
     return { count: room.size, users };
 }
@@ -182,13 +200,15 @@ app.get('/rooms', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.on('register', async (data) => {
-        let userId, username;
+        let userId, username, avatarUrl;
         if (data && typeof data === 'object') {
             userId = data.userId || data.username;
             username = data.username || 'Usuario';
+            avatarUrl = data.avatarUrl || '';
         } else {
             userId = data;
             username = 'Usuario';
+            avatarUrl = '';
         }
 
         if (!userId) {
@@ -223,8 +243,9 @@ io.on('connection', (socket) => {
 
         activeUsers.set(String(userId), socket.id);
         socketUsernames.set(socket.id, username);
+        socketAvatars.set(socket.id, avatarUrl);
         if (!userRooms.has(socket.id)) userRooms.set(socket.id, new Set());
-        console.log(`[Socket] User ${userId} (${username}) registered with role ${userRoles.get(String(userId))}`);
+        console.log(`[Socket] User ${userId} (${username}) registered with role ${userRoles.get(String(userId))} and avatar ${avatarUrl}`);
     });
 
     socket.on('join_room', async (roomId) => {
@@ -239,7 +260,7 @@ io.on('connection', (socket) => {
         if (numericRoomId) {
             try {
                 const historyResult = await pool.query(`
-                    SELECT cm.id, cm.user_id as "userId", u.username, 
+                    SELECT cm.id, cm.user_id as "userId", u.username, u.avatar_url as "avatarUrl", 
                            (SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = u.id LIMIT 1) as role,
                            cm.content as text, 
                            cm.created_at as timestamp, cm.game_id as "roomId"
@@ -262,6 +283,15 @@ io.on('connection', (socket) => {
         }
 
         socket.emit('trending_topics', { roomId, topics: getTrendingTopics(roomId) });
+        const roomData = getRoomUsers(roomId);
+        io.to(roomId).emit('room_users_update', { roomId, count: roomData.count, users: roomData.users });
+    });
+
+    socket.on('leave_room', (roomId) => {
+        socket.leave(roomId);
+        if (userRooms.has(socket.id)) {
+            userRooms.get(socket.id).delete(roomId);
+        }
         const roomData = getRoomUsers(roomId);
         io.to(roomId).emit('room_users_update', { roomId, count: roomData.count, users: roomData.users });
     });
@@ -382,7 +412,8 @@ io.on('connection', (socket) => {
 
         const msgId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const role = userRoles.get(String(userId)) || 'USER';
-        const message = { id: msgId, userId, username, role, text, timestamp: new Date().toISOString(), roomId };
+        const avatarUrl = socketAvatars.get(socket.id) || '';
+        const message = { id: msgId, userId, username, role, avatarUrl, text, timestamp: new Date().toISOString(), roomId };
         
         // Broadcast immediately for low latency
         io.to(roomId).emit('new_message', message);
@@ -391,11 +422,17 @@ io.on('connection', (socket) => {
         // ASYNC PERSISTENCE
         // ─────────────────────────────────────────────
         try {
-            // We use pool.query directly without waiting to not block the socket event
-            pool.query(
-                'INSERT INTO chat_messages (user_id, game_id, content) VALUES ($1, $2, $3)',
-                [userId, roomId, text]
-            ).catch(err => console.error('[Database] Message save error:', err.message));
+            let gameId = roomId;
+            if (roomId.startsWith('game-')) {
+                gameId = parseInt(roomId.replace('game-', ''), 10);
+            }
+            if (!isNaN(gameId)) {
+                // We use pool.query directly without waiting to not block the socket event
+                pool.query(
+                    'INSERT INTO chat_messages (user_id, game_id, content) VALUES ($1, $2, $3)',
+                    [userId, gameId, text]
+                ).catch(err => console.error('[Database] Message save error:', err.message));
+            }
         } catch (err) {
             console.error('[Database] Persistence block error:', err.message);
         }
@@ -422,9 +459,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('logout', async ({ userId }) => {
+        if (!userId) return;
+        try {
+            await pool.query('UPDATE users SET chat_cleared_at = CURRENT_TIMESTAMP WHERE id = $1', [userId]);
+            console.log(`[Socket] User ${userId} logged out. Set chat_cleared_at to current timestamp.`);
+        } catch (err) {
+            console.error('[Database] Logout chat clearance error:', err.message);
+        }
+    });
+
     socket.on('disconnect', () => {
         const username = socketUsernames.get(socket.id);
         socketUsernames.delete(socket.id);
+        socketAvatars.delete(socket.id);
         for (const [userId, sid] of activeUsers.entries()) {
             if (sid === socket.id) { 
                 activeUsers.delete(userId); 

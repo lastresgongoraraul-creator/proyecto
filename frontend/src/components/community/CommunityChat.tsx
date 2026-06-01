@@ -16,7 +16,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [connected, setConnected] = useState(false);
-  const [roomUsers, setRoomUsers] = useState<{ userId: string; username: string; role?: string }[]>([]);
+  const [roomUsers, setRoomUsers] = useState<{ userId: string; username: string; role?: string; avatarUrl?: string }[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +34,7 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
         text: msg.content,
         timestamp: msg.createdAt,
         username: msg.username,
+        avatarUrl: msg.avatarUrl,
         userId: String(msg.userId || '')
       }));
       setMessages(mappedMessages);
@@ -46,14 +47,14 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
   useEffect(() => {
     if (!user) return;
 
-    const chatUrl = `http://${window.location.hostname}:3001`;
+    const chatUrl = window.location.origin;
     const socket = io(chatUrl, { autoConnect: true });
     socketRef.current = socket;
 
     socket.on('connect', () => {
       if (user?.username) {
         setConnected(true);
-        socket.emit('register', { userId: user.id, username: user.username });
+        socket.emit('register', { userId: user.id, username: user.username, avatarUrl: user.avatarUrl });
         socket.emit('join_room', `game-${gameId}`);
       }
     });
@@ -171,8 +172,12 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
                       className={`chat-message-row group ${isOwn ? 'own' : 'other'} ${isSameUserAsPrev ? 'consecutive' : ''}`}
                     >
                       {!isOwn && !isSameUserAsPrev && (
-                        <div className="chat-avatar">
-                          {msg.username[0].toUpperCase()}
+                        <div className="chat-avatar overflow-hidden flex items-center justify-center">
+                          {msg.avatarUrl ? (
+                            <img src={msg.avatarUrl} alt={msg.username} className="w-full h-full object-cover" />
+                          ) : (
+                            msg.username[0].toUpperCase()
+                          )}
                         </div>
                       )}
                       {(!isOwn && isSameUserAsPrev) && <div className="chat-avatar-placeholder" />}
@@ -243,8 +248,12 @@ const CommunityChat: React.FC<CommunityChatProps> = ({ gameId, gameTitle, onUser
         <div className="users-list">
           {roomUsers.map((u) => (
             <div key={u.userId || u.username} className="user-item">
-              <div className="user-avatar-sm">
-                {u.username[0].toUpperCase()}
+              <div className="user-avatar-sm overflow-hidden flex items-center justify-center">
+                {u.avatarUrl ? (
+                  <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                ) : (
+                  u.username[0].toUpperCase()
+                )}
               </div>
               <span className={`user-name flex items-center gap-1 ${u.role === 'MODERATOR' ? 'text-emerald-400' : ''}`}>
                 @{u.username}

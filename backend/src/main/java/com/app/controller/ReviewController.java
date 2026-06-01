@@ -39,6 +39,7 @@ public class ReviewController {
                 .likesCount(0L)
                 .liked(false)
                 .followingAuthor(false)
+                .avatarUrl(review.getUser().getAvatarUrl() != null ? review.getUser().getAvatarUrl() : "")
                 .build();
                 
         return ResponseEntity.ok(dto);
@@ -64,6 +65,7 @@ public class ReviewController {
                 .likesCount(0L)
                 .liked(false)
                 .followingAuthor(false)
+                .avatarUrl(review.getUser().getAvatarUrl() != null ? review.getUser().getAvatarUrl() : "")
                 .build();
                 
         return ResponseEntity.ok(dto);

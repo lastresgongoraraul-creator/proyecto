@@ -29,9 +29,6 @@ public class GameController {
     private final com.app.repository.ReviewLikeRepository reviewLikeRepository;
     private final com.app.repository.FollowRepository followRepository;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    @org.springframework.context.annotation.Lazy
-    private GameController self;
 
     @GetMapping
     public ResponseEntity<PagedResponse<GameResponse>> getGames(
@@ -75,62 +72,73 @@ public class GameController {
 
     @GetMapping("/{id}")
     public ResponseEntity<GameDetailResponse> getGameById(@PathVariable Long id, @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
-        final com.app.model.User currentUser = userDetails != null ? 
-                userRepository.findByUsername(userDetails.getUsername()).or(() -> userRepository.findByEmail(userDetails.getUsername())).orElse(null) : null;
+        com.app.model.User tempUser = null;
+        if (userDetails != null) {
+            java.util.Optional<com.app.model.User> optUser = userRepository.findByUsername(userDetails.getUsername());
+            if (optUser.isPresent()) {
+                tempUser = optUser.get();
+            } else {
+                tempUser = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
+            }
+        }
+        final com.app.model.User currentUser = tempUser;
         
         return gameRepository.findById(id)
-                .map(game -> {
-                    List<ReviewDto> reviews = reviewRepository.findByGameId(id).stream()
-                            .map(r -> ReviewDto.builder()
-                                    .id(r.getId())
-                                    .username(r.getUser().getUsername())
-                                    .score(r.getScore())
-                                    .comment(r.getComment())
-                                    .gameId(game.getId())
-                                    .gameTitle(game.getName())
-                                    .createdAt(r.getCreatedAt())
-                                    .userId(r.getUser().getId())
-                                    .likesCount(reviewLikeRepository.countByReview(r))
-                                    .liked(currentUser != null && reviewLikeRepository.existsByReviewAndUser(r, currentUser))
-                                    .followingAuthor(currentUser != null && followRepository.existsByFollowerAndFollowed(currentUser, r.getUser()))
-                                    .build())
-                            .collect(Collectors.toList());
-
-                    String sentimentSummary = null;
-                    try {
-                        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-                        String url = "http://ai-service:8000/games/" + id + "/sentiment";
-                        java.util.Map<?, ?> response = restTemplate.getForObject(url, java.util.Map.class);
-                        if (response != null && response.containsKey("summary")) {
-                            sentimentSummary = (String) response.get("summary");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("Error calling AI service for sentiment: " + e.getMessage());
-                    }
-
-                    return GameDetailResponse.builder()
-                            .id(game.getId())
-                            .title(game.getName())
-                            .description(game.getSummary())
-                            .genre(game.getPrimaryGenre())
-                            .avgScore(game.getAvgScore())
-                            .totalReviews(game.getTotalReviews())
-                            .thumbnail(game.getCoverUrl())
-                            .platform(game.getPlatforms() != null && !game.getPlatforms().isEmpty() ? game.getPlatforms().get(0) : "N/A")
-                            .platforms(game.getPlatforms())
-                            .releaseYear(game.getReleaseYear())
-                            .igdbId(game.getIgdbId())
-                            .pegi(game.getPegi())
-                            .isMultiplayer(game.getIsMultiplayer())
-                            .developer(game.getDeveloper())
-                            .publisher(game.getPublisher())
-                            .officialWebsite(game.getOfficialWebsite())
-                            .reviews(reviews)
-                            .sentimentSummary(sentimentSummary)
-                            .build();
-                })
+                .map(game -> buildGameDetailResponse(game, currentUser, id))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(new org.springframework.http.ResponseEntity<>(org.springframework.http.HttpStatus.NOT_FOUND));
+    }
+
+    private GameDetailResponse buildGameDetailResponse(Game game, com.app.model.User currentUser, Long id) {
+        List<ReviewDto> reviews = reviewRepository.findByGameId(id).stream()
+                .map(r -> ReviewDto.builder()
+                        .id(r.getId())
+                        .username(r.getUser().getUsername())
+                        .score(r.getScore())
+                        .comment(r.getComment())
+                        .gameId(game.getId())
+                        .gameTitle(game.getName())
+                        .createdAt(r.getCreatedAt())
+                        .userId(r.getUser().getId())
+                        .likesCount(reviewLikeRepository.countByReview(r))
+                        .liked(currentUser != null && reviewLikeRepository.existsByReviewAndUser(r, currentUser))
+                        .followingAuthor(currentUser != null && followRepository.existsByFollowerAndFollowed(currentUser, r.getUser()))
+                        .avatarUrl(r.getUser().getAvatarUrl() != null ? r.getUser().getAvatarUrl() : "")
+                        .build())
+                .collect(Collectors.toList());
+
+        String sentimentSummary = null;
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            String url = "http://ai-service:8000/games/" + id + "/sentiment";
+            java.util.Map<?, ?> response = restTemplate.getForObject(url, java.util.Map.class);
+            if (response != null && response.containsKey("summary")) {
+                sentimentSummary = (String) response.get("summary");
+            }
+        } catch (Exception e) {
+            System.err.println("Error calling AI service for sentiment: " + e.getMessage());
+        }
+
+        return GameDetailResponse.builder()
+                .id(game.getId())
+                .title(game.getName())
+                .description(game.getSummary())
+                .genre(game.getPrimaryGenre())
+                .avgScore(game.getAvgScore())
+                .totalReviews(game.getTotalReviews())
+                .thumbnail(game.getCoverUrl())
+                .platform(game.getPlatforms() != null && !game.getPlatforms().isEmpty() ? game.getPlatforms().get(0) : "N/A")
+                .platforms(game.getPlatforms())
+                .releaseYear(game.getReleaseYear())
+                .igdbId(game.getIgdbId())
+                .pegi(game.getPegi())
+                .isMultiplayer(game.getIsMultiplayer())
+                .developer(game.getDeveloper())
+                .publisher(game.getPublisher())
+                .officialWebsite(game.getOfficialWebsite())
+                .reviews(reviews)
+                .sentimentSummary(sentimentSummary)
+                .build();
     }
 
     @PostMapping
@@ -172,12 +180,12 @@ public class GameController {
     }
 
     private Specification<Game> idGreaterThan(Long id) {
-        return (root, query, cb) -> cb.greaterThan(root.get("id"), id);
+        return (root, query, cb) -> cb.greaterThan(root.<Long>get("id"), id);
     }
 
     private Specification<Game> nameLike(String name) {
         return (root, query, cb) -> cb.like(
-                cb.function("unaccent", String.class, cb.lower(root.get("name"))),
+                cb.function("unaccent", String.class, cb.lower(root.<String>get("name"))),
                 cb.function("unaccent", String.class, cb.literal("%" + name.toLowerCase() + "%"))
         );
     }

@@ -23,4 +23,5 @@ public class ReviewDto {
     private Long likesCount;
     private boolean liked;
     private boolean followingAuthor;
+    private String avatarUrl;
 }

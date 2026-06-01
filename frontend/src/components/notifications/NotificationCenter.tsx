@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
 import { Bell, Heart, UserPlus, X, Check } from 'lucide-react';
 import { acceptFriendRequest, rejectFriendRequest } from '../../api/socialService';
+import { Link } from 'react-router-dom';
 
 const NotificationCenter: React.FC = () => {
   const { notifications, unreadCount, markAsRead } = useNotifications();
@@ -102,9 +103,9 @@ const NotificationCenter: React.FC = () => {
             
             {notifications.length > 0 && (
               <div className="p-2 text-center border-t border-slate-700 bg-slate-800/50">
-                <button className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">
+                <Link to="/activity" className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold" onClick={() => setIsOpen(false)}>
                   Ver toda la actividad
-                </button>
+                </Link>
               </div>
             )}
           </div>

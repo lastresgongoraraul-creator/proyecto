@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchProfile, followUser, unfollowUser, sendFriendRequest, acceptFriendRequestByUserId } from '../api/socialService';
+import { fetchProfile, followUser, unfollowUser, sendFriendRequest, acceptFriendRequestByUserId, updateProfile } from '../api/socialService';
 import type { UserProfile } from '../types';
-import { Calendar, Users, MessageSquare, UserPlus, Check, MessageCircle, Clock, UserMinus } from 'lucide-react';
+import { Calendar, Users, MessageSquare, UserPlus, Check, MessageCircle, Clock, UserMinus, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,9 @@ const Profile: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user: currentUser } = useAuth();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ username: '', avatarUrl: '' });
+  const { user: currentUser, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const loadProfile = async () => {
@@ -28,6 +30,12 @@ const Profile: React.FC = () => {
   useEffect(() => {
     loadProfile();
   }, [username]);
+
+  useEffect(() => {
+    if (profile) {
+      setEditForm({ username: profile.username, avatarUrl: profile.avatarUrl || '' });
+    }
+  }, [profile]);
 
   const handleToggleFollow = async () => {
     if (!profile) return;
@@ -50,11 +58,26 @@ const Profile: React.FC = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-slate-800 rounded-2xl p-8 shadow-xl border border-slate-700 mb-8">
         <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center text-3xl font-bold">
-            {profile.username[0].toUpperCase()}
+          <div className="w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden">
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt={profile.username} className="w-full h-full object-cover" />
+            ) : (
+              profile.username[0].toUpperCase()
+            )}
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold text-white mb-2">{profile.username}</h1>
+            <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
+              <h1 className="text-3xl font-bold text-white">{profile.username}</h1>
+              {currentUser && currentUser.username === profile.username && (
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                  title="Editar Perfil"
+                >
+                  <Settings size={20} />
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-slate-400">
               <span className="flex items-center gap-1">
                 <Calendar size={18} /> Miembro desde {new Date(profile.createdAt).toLocaleDateString()}
@@ -170,6 +193,77 @@ const Profile: React.FC = () => {
           <p className="text-slate-500 text-center py-8">Aún no hay reseñas.</p>
         )}
       </div>
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-6">
+            <h2 className="text-xl font-bold">Editar Perfil</h2>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">Nombre de usuario</label>
+                <input
+                  type="text"
+                  value={editForm.username}
+                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">Imagen de Avatar</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setEditForm({ ...editForm, avatarUrl: reader.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700"
+                />
+                {editForm.avatarUrl && (
+                  <div className="mt-2 flex justify-center">
+                    <img src={editForm.avatarUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await updateProfile(editForm);
+                    await refreshUser();
+                    setShowEditModal(false);
+                    loadProfile();
+                    if (editForm.username !== profile?.username) {
+                      navigate(`/profile/${editForm.username}`);
+                    }
+                  } catch (error) {
+                    console.error('Error updating profile:', error);
+                    alert('Error al actualizar el perfil.');
+                  }
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

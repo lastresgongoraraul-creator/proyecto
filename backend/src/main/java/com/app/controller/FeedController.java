@@ -53,6 +53,7 @@ public class FeedController {
                         .createdAt(r.getCreatedAt())
                         .likesCount(reviewLikeRepository.countByReview(r))
                         .liked(reviewLikeRepository.existsByReviewAndUser(r, currentUser))
+                        .avatarUrl(r.getUser().getAvatarUrl() != null ? r.getUser().getAvatarUrl() : "")
                         .build())
                 .collect(Collectors.toList());
 

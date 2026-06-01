@@ -9,9 +9,9 @@ import CommunityRoom from './pages/CommunityRoom';
 import Profile from './pages/Profile';
 import Messages from './pages/Messages';
 import AdminDashboard from './pages/AdminDashboard';
+import MyActivity from './pages/MyActivity';
 import { NotificationProvider } from './context/NotificationContext';
 import { CommunityProvider } from './context/CommunityContext';
-import ChatWidget from './components/chat/ChatWidget';
 
 const App: React.FC = () => {
   return (
@@ -28,18 +28,15 @@ const App: React.FC = () => {
               <Route path="register" element={<Register />} />
               {/* Hub de comunidades (dentro del layout normal) */}
               <Route path="communities" element={<Communities />} />
+              <Route path="communities/:gameId" element={<CommunityRoom />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:username" element={<Messages />} />
+              <Route path="activity" element={<MyActivity />} />
               <Route path="admin/dashboard" element={<AdminDashboard />} />
             </Route>
 
-            {/* Sala de comunidad: pantalla completa, sin layout estándar */}
-            <Route path="/communities/:gameId" element={<CommunityRoom />} />
-
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          {/* El ChatWidget solo se muestra fuera de /communities/:gameId */}
-          <ChatWidget />
         </CommunityProvider>
       </NotificationProvider>
     </BrowserRouter>

@@ -230,6 +230,25 @@ public class SocialController {
         return ResponseEntity.ok(friends);
     }
 
+    @GetMapping("/friend-requests/pending")
+    public ResponseEntity<?> getPendingFriendRequests(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .or(() -> userRepository.findByEmail(userDetails.getUsername()))
+                .orElseThrow();
+        
+        List<com.app.model.FriendRequest> requests = friendRequestRepository.findByReceiverAndStatus(user, com.app.model.FriendRequestStatus.PENDING);
+        
+        return ResponseEntity.ok(requests.stream()
+                .map(req -> Map.of(
+                        "id", (Object)req.getId(),
+                        "senderId", (Object)req.getSender().getId(),
+                        "senderUsername", (Object)req.getSender().getUsername(),
+                        "senderAvatarUrl", req.getSender().getAvatarUrl() != null ? req.getSender().getAvatarUrl() : "",
+                        "createdAt", req.getCreatedAt() != null ? req.getCreatedAt().toString() : ""
+                ))
+                .collect(Collectors.toList()));
+    }
+
     @GetMapping("/profile/{username}")
     public ResponseEntity<?> getProfile(@PathVariable String username, @AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByUsername(username)
@@ -254,10 +273,10 @@ public class SocialController {
             System.out.println("DEBUG: Calculated friendStatus: " + friendStatus);
         }
 
-        // This is a simple profile data response
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
+                "avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : "",
                 "createdAt", user.getCreatedAt(),
                 "isFollowing", isFollowing,
                 "friendStatus", friendStatus,
@@ -274,6 +293,7 @@ public class SocialController {
                                 .likesCount(reviewLikeRepository.countByReview(r))
                                 .liked(currentUser != null && reviewLikeRepository.existsByReviewAndUser(r, currentUser))
                                 .followingAuthor(currentUser != null && followRepository.existsByFollowerAndFollowed(currentUser, r.getUser()))
+                                .avatarUrl(r.getUser().getAvatarUrl() != null ? r.getUser().getAvatarUrl() : "")
                                 .build())
                         .collect(Collectors.toList())
         ));
@@ -305,6 +325,7 @@ public class SocialController {
                         .likesCount(reviewLikeRepository.countByReview(r))
                         .liked(user != null && reviewLikeRepository.existsByReviewAndUser(r, user))
                         .followingAuthor(user != null && followRepository.existsByFollowerAndFollowed(user, r.getUser()))
+                        .avatarUrl(r.getUser().getAvatarUrl() != null ? r.getUser().getAvatarUrl() : "")
                         .build())
                 .collect(Collectors.toList()));
     }

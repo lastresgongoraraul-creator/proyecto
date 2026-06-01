@@ -28,7 +28,8 @@ public class DirectMessageController {
         List<Map<String, Object>> response = participants.stream()
                 .map(u -> Map.of(
                         "id", (Object)u.getId(),
-                        "username", (Object)u.getUsername()
+                        "username", (Object)u.getUsername(),
+                        "avatarUrl", u.getAvatarUrl() != null ? u.getAvatarUrl() : ""
                 ))
                 .collect(Collectors.toList());
         

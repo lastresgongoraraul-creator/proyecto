@@ -61,10 +61,12 @@ public class CommunityService {
     }
 
     public List<Map<String, Object>> getCommunities(String currentUsername) {
-        final User currentUser = currentUsername != null ?
-                userRepository.findByUsername(currentUsername)
-                        .orElseGet(() -> userRepository.findByEmail(currentUsername).orElse(null))
-                : null;
+        User tempUser = null;
+        if (currentUsername != null) {
+            tempUser = userRepository.findByUsername(currentUsername)
+                    .orElseGet(() -> userRepository.findByEmail(currentUsername).orElse(null));
+        }
+        final User currentUser = tempUser;
 
         // For now, return the most popular games as communities
         return gameRepository.findAll().stream().map(game -> {
@@ -99,18 +101,31 @@ public class CommunityService {
                 }).collect(Collectors.toList());
     }
 
-    public List<ChatMessageResponse> getChatHistory(Long gameId) {
+    public List<ChatMessageResponse> getChatHistory(Long gameId, String currentUsername) {
         if (!gameRepository.existsById(gameId)) {
             throw new ResourceNotFoundException("Game not found");
         }
 
+        java.time.ZonedDateTime clearTime = null;
+        if (currentUsername != null) {
+            User currentUser = userRepository.findByUsername(currentUsername)
+                    .orElseGet(() -> userRepository.findByEmail(currentUsername).orElse(null));
+            if (currentUser != null) {
+                clearTime = currentUser.getChatClearedAt();
+            }
+        }
+
+        final java.time.ZonedDateTime filterTime = clearTime;
+
         return chatMessageRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+                .filter(msg -> filterTime == null || msg.getCreatedAt().isAfter(filterTime))
                 .map(msg -> ChatMessageResponse.builder()
                         .id(msg.getId())
                         .content(msg.getContent())
                         .createdAt(msg.getCreatedAt())
                         .username(msg.getUser().getUsername())
                         .avatarUrl(msg.getUser().getAvatarUrl())
+                        .userId(msg.getUser().getId())
                         .build())
                 .collect(Collectors.toList());
     }

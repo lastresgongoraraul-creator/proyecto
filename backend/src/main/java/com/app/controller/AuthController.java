@@ -114,6 +114,7 @@ public class AuthController {
                     .username(user.getUsername())
                     .email(user.getEmail())
                     .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                    .avatarUrl(user.getAvatarUrl())
                     .build();
             
             java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -136,6 +137,7 @@ public class AuthController {
                         .username(user.getUsername())
                         .email(user.getEmail())
                         .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                        .avatarUrl(user.getAvatarUrl())
                         .build())
                 .build();
     }

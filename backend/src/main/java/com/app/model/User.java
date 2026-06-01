@@ -35,6 +35,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @NotBlank
     @Size(max = 255)
     @Column(nullable = false)
@@ -64,9 +65,12 @@ public class User {
     @Column(columnDefinition = "vector(384)", insertable = false, updatable = false)
     private String embedding;
 
-    @Column(name = "avatar_url", length = 512)
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
 
     @Column(name = "muted_until")
     private java.time.ZonedDateTime mutedUntil;
+
+    @Column(name = "chat_cleared_at")
+    private java.time.ZonedDateTime chatClearedAt;
 }

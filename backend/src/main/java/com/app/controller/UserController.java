@@ -21,6 +21,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final NotificationService notificationService;
+    private final com.app.repository.GameRepository gameRepository;
 
     @PostMapping("/{id}/follow")
     public ResponseEntity<?> followUser(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
@@ -76,7 +77,22 @@ public class UserController {
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error calling AI service: " + e.getMessage());
+            System.out.println("DEBUG: AI service failed, falling back to top rated games.");
+            org.springframework.data.domain.Pageable top10 = org.springframework.data.domain.PageRequest.of(0, 10, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "avgScore"));
+            java.util.List<com.app.model.Game> games = gameRepository.findAll(top10).getContent();
+            
+            java.util.List<java.util.Map<String, Object>> fallback = games.stream().map(g -> java.util.Map.of(
+                "id", (Object)g.getId(),
+                "name", (Object)g.getName(),
+                "summary", g.getSummary() != null ? (Object)g.getSummary() : (Object)"",
+                "cover_url", g.getCoverUrl() != null ? (Object)g.getCoverUrl() : (Object)"",
+                "primary_genre", g.getPrimaryGenre() != null ? (Object)g.getPrimaryGenre() : (Object)"",
+                "platforms", g.getPlatforms() != null ? (Object)g.getPlatforms() : (Object)java.util.List.of(),
+                "release_year", g.getReleaseYear() != null ? (Object)g.getReleaseYear() : (Object)0,
+                "avg_score", g.getAvgScore() != null ? (Object)g.getAvgScore() : (Object)0
+            )).collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(fallback);
         }
     }
 
@@ -93,7 +109,8 @@ public class UserController {
             ResponseEntity<java.util.List> response = restTemplate.getForEntity(url, java.util.List.class);
             return ResponseEntity.ok(response.getBody());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error calling AI service: " + e.getMessage());
+            System.out.println("DEBUG: AI service failed for friends, returning empty list.");
+            return ResponseEntity.ok(java.util.List.of());
         }
     }
 
@@ -107,5 +124,43 @@ public class UserController {
         userRepository.save(user);
         
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUsers(@RequestParam String query) {
+        java.util.List<User> users = userRepository.findByUsernameContainingIgnoreCase(query);
+        return ResponseEntity.ok(users.stream()
+                .map(u -> java.util.Map.of(
+                        "id", (Object)u.getId(),
+                        "username", (Object)u.getUsername(),
+                        "avatarUrl", u.getAvatarUrl() != null ? u.getAvatarUrl() : ""
+                ))
+                .collect(java.util.stream.Collectors.toList()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody java.util.Map<String, String> updates, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .or(() -> userRepository.findByEmail(userDetails.getUsername()))
+                .orElseThrow();
+        
+        if (updates.containsKey("username")) {
+            String newUsername = updates.get("username");
+            if (!newUsername.equals(user.getUsername()) && userRepository.findByUsername(newUsername).isPresent()) {
+                return ResponseEntity.badRequest().body("Username already exists");
+            }
+            user.setUsername(newUsername);
+        }
+        
+        if (updates.containsKey("avatarUrl")) {
+            user.setAvatarUrl(updates.get("avatarUrl"));
+        }
+        
+        userRepository.save(user);
+        return ResponseEntity.ok(java.util.Map.of(
+                "id", (Object)user.getId(),
+                "username", (Object)user.getUsername(),
+                "avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : ""
+        ));
     }
 }

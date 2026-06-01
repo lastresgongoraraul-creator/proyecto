@@ -33,7 +33,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
   return (
     <div 
       onClick={() => navigate(`/games/${game.id}`)}
-      className="group bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col h-full cursor-pointer"
+      className="group bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-xl shadow-black/40 hover:border-indigo-500/50 transition-all hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 flex flex-col h-full cursor-pointer"
     >
       <div className="relative aspect-video overflow-hidden">
         <img 

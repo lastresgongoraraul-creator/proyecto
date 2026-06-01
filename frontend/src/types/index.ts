@@ -3,6 +3,7 @@ export interface User {
   email: string;
   username: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
+  avatarUrl?: string;
 }
 
 export interface AuthResponse {
@@ -22,6 +23,7 @@ export interface Review {
   followingAuthor?: boolean;
   gameId?: number;
   gameTitle?: string;
+  avatarUrl?: string;
 }
 
 export interface Game {
@@ -58,6 +60,7 @@ export interface UserProfile {
   followersCount: number;
   followingCount: number;
   reviews: Review[];
+  avatarUrl?: string;
 }
 
 export interface AppNotification {
@@ -75,6 +78,7 @@ export interface ChatMessage {
   userId: string;
   username: string;
   role?: string;
+  avatarUrl?: string;
   text: string;
   timestamp: string;
   roomId?: string;

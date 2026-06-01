@@ -17,4 +17,5 @@ public class ChatMessageResponse {
     private ZonedDateTime createdAt;
     private String username;
     private String avatarUrl;
+    private Long userId;
 }

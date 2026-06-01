@@ -3,14 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchConversations, fetchDirectMessages, sendDirectMessage, fetchFriends } from '../api/socialService';
 import { useAuth } from '../hooks/useAuth';
 import { io, Socket } from 'socket.io-client';
-import { MessageSquare, Send, Loader2, Search, Users } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Search, Users, ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 const Messages: React.FC = () => {
   const { user } = useAuth();
   const { username: urlUsername } = useParams<{ username?: string }>();
   const queryClient = useQueryClient();
-  const [selectedRecipient, setSelectedRecipient] = useState<{ id: number; username: string } | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState<{ id: number; username: string; avatarUrl?: string } | null>(null);
   const [messageText, setMessageText] = useState('');
   const [localMessages, setLocalMessages] = useState<any[]>([]);
   const socketRef = useRef<Socket | null>(null);
@@ -119,7 +119,9 @@ const Messages: React.FC = () => {
   return (
     <div className="h-[calc(100vh-12rem)] flex bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
       {/* Sidebar */}
-      <div className="w-80 border-r border-white/10 flex flex-col bg-slate-900/50">
+      <div className={`border-r border-white/10 flex-col bg-slate-900/50 transition-all ${
+        selectedRecipient ? 'hidden lg:flex lg:w-80' : 'w-full lg:w-80 flex'
+      }`}>
         <div className="p-6 border-b border-white/10">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <MessageSquare className="text-indigo-400" />
@@ -155,8 +157,12 @@ const Messages: React.FC = () => {
                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                     }`}
                   >
-                    <div className="relative w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-bold text-sm border border-white/5">
-                      {conv.username[0].toUpperCase()}
+                    <div className="relative w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center font-bold text-sm border border-white/5 overflow-hidden">
+                      {conv.avatarUrl ? (
+                        <img src={conv.avatarUrl} alt={conv.username} className="w-full h-full object-cover" />
+                      ) : (
+                        conv.username[0].toUpperCase()
+                      )}
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${conv.id % 2 === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`}></div>
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
@@ -194,8 +200,12 @@ const Messages: React.FC = () => {
                         : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                     }`}
                   >
-                    <div className="relative w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-500/20">
-                      {friend.username[0].toUpperCase()}
+                    <div className="relative w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-full flex items-center justify-center font-bold text-sm border border-indigo-500/20 overflow-hidden">
+                      {friend.avatarUrl ? (
+                        <img src={friend.avatarUrl} alt={friend.username} className="w-full h-full object-cover" />
+                      ) : (
+                        friend.username[0].toUpperCase()
+                      )}
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${friend.id % 2 === 0 ? 'bg-emerald-500' : 'bg-slate-500'}`}></div>
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
@@ -216,14 +226,26 @@ const Messages: React.FC = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-slate-950/20">
+      <div className={`flex-col bg-slate-950/20 transition-all ${
+        selectedRecipient ? 'w-full lg:flex-1 flex' : 'hidden lg:flex lg:flex-1'
+      }`}>
         {selectedRecipient ? (
           <>
             {/* Header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-900/30 backdrop-blur-sm">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-xs">
-                  {selectedRecipient.username[0].toUpperCase()}
+                <button 
+                  onClick={() => setSelectedRecipient(null)}
+                  className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden">
+                  {selectedRecipient.avatarUrl ? (
+                    <img src={selectedRecipient.avatarUrl} alt={selectedRecipient.username} className="w-full h-full object-cover" />
+                  ) : (
+                    selectedRecipient.username[0].toUpperCase()
+                  )}
                 </div>
                 <div>
                   <h3 className="font-bold">@{selectedRecipient.username}</h3>

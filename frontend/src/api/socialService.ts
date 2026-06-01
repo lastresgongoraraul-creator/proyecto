@@ -27,7 +27,7 @@ export const unlikeReview = async (reviewId: number): Promise<void> => {
   await api.delete(`/reviews/${reviewId}/like`);
 };
 
-export const fetchConversations = async (): Promise<{ id: number; username: string }[]> => {
+export const fetchConversations = async (): Promise<{ id: number; username: string; avatarUrl?: string }[]> => {
   const response = await api.get('/direct-messages/conversations');
   return response.data;
 };
@@ -66,6 +66,11 @@ export const fetchFriends = async (): Promise<{ id: number; username: string; av
   return response.data;
 };
 
+export const fetchPendingFriendRequests = async (): Promise<any[]> => {
+  const response = await api.get('/social/friend-requests/pending');
+  return response.data;
+};
+
 export const postReport = async (reviewId: number, reason: string): Promise<void> => {
   await api.post('/reports', { reviewId, reason });
 };
@@ -76,5 +81,15 @@ export const reportUser = async (userId: number): Promise<void> => {
 
 export const fetchFriendRecommendations = async (): Promise<{ id: number; username: string; overlap_count: number }[]> => {
   const response = await api.get('/users/me/recommended-friends');
+  return response.data;
+};
+
+export const searchUsers = async (query: string): Promise<any[]> => {
+  const response = await api.get(`/users/search?query=${query}`);
+  return response.data;
+};
+
+export const updateProfile = async (updates: { username?: string; avatarUrl?: string }): Promise<any> => {
+  const response = await api.put('/users/me', updates);
   return response.data;
 };
