@@ -58,8 +58,6 @@ services:
   ai-service:
     build: ./ai-service
     container_name: ai-service
-    ports:
-      - "8000:8000"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       POSTGRES_USER: ${POSTGRES_USER}
