@@ -256,8 +256,20 @@ io.on('connection', (socket) => {
         // ─────────────────────────────────────────────
         // LOAD CHAT HISTORY (Last 50 messages)
         // ─────────────────────────────────────────────
-        const numericRoomId = !isNaN(parseInt(roomId)) && String(parseInt(roomId)) === String(roomId);
-        if (numericRoomId) {
+        let numericRoomId = false;
+        let gameIdForHistory = null;
+        if (!isNaN(parseInt(roomId)) && String(parseInt(roomId)) === String(roomId)) {
+            numericRoomId = true;
+            gameIdForHistory = parseInt(roomId);
+        } else if (typeof roomId === 'string' && roomId.startsWith('game-')) {
+            const potentialId = parseInt(roomId.replace('game-', ''), 10);
+            if (!isNaN(potentialId)) {
+                numericRoomId = true;
+                gameIdForHistory = potentialId;
+            }
+        }
+
+        if (numericRoomId && gameIdForHistory !== null) {
             try {
                 const historyResult = await pool.query(`
                     SELECT cm.id, cm.user_id as "userId", u.username, u.avatar_url as "avatarUrl", 
@@ -269,7 +281,7 @@ io.on('connection', (socket) => {
                     WHERE cm.game_id = $1
                     ORDER BY cm.created_at DESC
                     LIMIT 50
-                `, [roomId]);
+                `, [gameIdForHistory]);
                 
                 // Reverse history to show chronological order
                 const history = historyResult.rows.reverse();

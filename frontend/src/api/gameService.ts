@@ -44,11 +44,9 @@ export const fetchGameById = async (id: string): Promise<Game> => {
 
 export const fetchSimilarGames = async (id: string, minScore: number = 0): Promise<Game[]> => {
   // Hit the AI service running on port 8000
-  const response = await fetch(`http://localhost:8000/games/${id}/similar?min_score=${minScore}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch similar games');
-  }
-  const data = await response.json();
+  const response = await api.get(`/ai/games/${id}/similar?min_score=${minScore}`);
+  // Axios automatically throws on non-2xx status
+  const data = response.data;
   // Map the AI response format to our Game format
   interface AIGame {
     id: number;
@@ -93,11 +91,8 @@ export const fetchUserRecommendations = async (): Promise<Game[]> => {
 
 export const fetchGameSentiment = async (gameId: string): Promise<{ positive: number; negative: number }> => {
   try {
-    const response = await fetch(`http://localhost:8000/games/${gameId}/sentiment`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch game sentiment');
-    }
-    const data = await response.json();
+    const response = await api.get(`/ai/games/${gameId}/sentiment`);
+    const data = response.data;
     return {
       positive: data.positive_percentage || 0,
       negative: data.negative_percentage || 0,
