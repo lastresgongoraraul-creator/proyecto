@@ -113,7 +113,7 @@ public class AuthController {
                     .id(user.getId())
                     .username(user.getUsername())
                     .email(user.getEmail())
-                    .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                    .role(user.getRoles().stream().anyMatch(r -> r.getName().equals("ADMIN")) ? "ADMIN" : user.getRoles().stream().anyMatch(r -> r.getName().equals("MODERATOR")) ? "MODERATOR" : "USER")
                     .avatarUrl(user.getAvatarUrl())
                     .build();
             
@@ -136,7 +136,7 @@ public class AuthController {
                         .id(user.getId())
                         .username(user.getUsername())
                         .email(user.getEmail())
-                        .role(user.getRoles().stream().findFirst().map(Role::getName).orElse("USER"))
+                        .role(user.getRoles().stream().anyMatch(r -> r.getName().equals("ADMIN")) ? "ADMIN" : user.getRoles().stream().anyMatch(r -> r.getName().equals("MODERATOR")) ? "MODERATOR" : "USER")
                         .avatarUrl(user.getAvatarUrl())
                         .build())
                 .build();
