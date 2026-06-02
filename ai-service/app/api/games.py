@@ -23,12 +23,15 @@ def get_similar_games(id: int, limit: int = 5, min_score: float = 0.0, db: Sessi
     if reference_game.embedding is None:
         raise AIException(status_code=400, message=f"Game with ID {id} has no embedding", error_type="Bad Request")
 
+    from sqlalchemy import or_
+
     # 2. Perform similarity search with minimum score filter
     # pgvector supports <-> (L2 distance), <=> (cosine distance), <#> (inner product)
     similar_games = (
         db.query(Game)
         .filter(Game.id != id)
-        .filter(Game.avg_score >= min_score)
+        .filter(Game.embedding.isnot(None))
+        .filter(or_(Game.avg_score >= min_score, Game.avg_score.is_(None)))
         .order_by(Game.embedding.cosine_distance(reference_game.embedding))
         .limit(limit)
         .all()
