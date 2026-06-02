@@ -25,14 +25,21 @@ def get_similar_games(id: int, limit: int = 5, min_score: float = 0.0, db: Sessi
 
     from sqlalchemy import or_
 
+    # Convert to list to ensure compatibility with pgvector adapter
+    ref_embedding = reference_game.embedding
+    if hasattr(ref_embedding, "tolist"):
+        ref_embedding = ref_embedding.tolist()
+    elif not isinstance(ref_embedding, list):
+        ref_embedding = list(ref_embedding)
+
     # 2. Perform similarity search with minimum score filter
     # pgvector supports <-> (L2 distance), <=> (cosine distance), <#> (inner product)
     similar_games = (
         db.query(Game)
         .filter(Game.id != id)
-        .filter(Game.embedding.isnot(None))
-        .filter(or_(Game.avg_score >= min_score, Game.avg_score.is_(None)))
-        .order_by(Game.embedding.cosine_distance(reference_game.embedding))
+        .filter(Game.embedding != None)
+        .filter(or_(Game.avg_score >= min_score, Game.avg_score == None))
+        .order_by(Game.embedding.cosine_distance(ref_embedding))
         .limit(limit)
         .all()
     )
