@@ -6,6 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Representa un mensaje directo o privado enviado de un usuario a otro.
+ * Incluye el contenido del mensaje y si ha sido leído o no por el receptor.
+ */
 @Entity
 @Table(name = "direct_messages")
 @Getter

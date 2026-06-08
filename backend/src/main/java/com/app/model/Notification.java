@@ -6,6 +6,11 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Representa una notificación generada en el sistema para avisar a un usuario.
+ * Puede ser por un "Me gusta", un nuevo seguidor, una respuesta, etc.
+ * Estas notificaciones se envían por SSE y se guardan en la base de datos.
+ */
 @Entity
 @Table(name = "notifications")
 @Getter

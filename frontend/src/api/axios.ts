@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   withCredentials: true, // Required for cookies
 });
 
@@ -40,9 +40,10 @@ api.interceptors.response.use(
 
       try {
         // Attempt to refresh the token
+        const currentRefreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
-          {},
+          { refreshToken: currentRefreshToken },
           { withCredentials: true }
         );
 

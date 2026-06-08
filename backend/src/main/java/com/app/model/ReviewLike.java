@@ -6,6 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Entidad asociativa que registra cuándo un usuario le da "Me gusta" a una reseña.
+ * Relaciona de forma única a un User con una Review.
+ */
 @Entity
 @Table(name = "review_likes", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"review_id", "user_id"})

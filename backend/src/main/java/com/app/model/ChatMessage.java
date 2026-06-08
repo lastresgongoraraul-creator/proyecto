@@ -6,6 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Representa un mensaje enviado por un usuario dentro del chat de la comunidad
+ * de un juego específico. Relaciona al autor (User) con el juego (Game).
+ */
 @Entity
 @Table(name = "chat_messages")
 @Getter

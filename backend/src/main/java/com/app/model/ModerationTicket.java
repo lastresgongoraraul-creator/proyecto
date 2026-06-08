@@ -7,6 +7,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Representa un ticket de moderación o reporte generado por un usuario
+ * al denunciar una reseña (Review). Los moderadores revisan este ticket para actuar.
+ */
 @Entity
 @Table(name = "moderation_queue")
 @Getter

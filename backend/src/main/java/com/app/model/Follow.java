@@ -6,6 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Registra la acción de seguir a otro usuario en la plataforma.
+ * Relaciona al usuario seguidor (follower) con el usuario al que sigue (followed).
+ */
 @Entity
 @Table(name = "follows", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"follower_id", "followed_id"})

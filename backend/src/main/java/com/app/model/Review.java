@@ -8,6 +8,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Entidad que representa una reseña o review que hace un usuario (User) sobre un juego (Game).
+ * Depende tanto del usuario que la escribe como del juego al que pertenece.
+ */
 @Entity
 @Table(name = "reviews")
 @Getter

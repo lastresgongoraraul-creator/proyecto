@@ -31,6 +31,12 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
     private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
+    /**
+     * Registra un nuevo usuario en el sistema.
+     * Si el email ya existe, devuelve un error 400.
+     * Asigna el rol por defecto 'USER', encripta la contraseña y guarda el usuario.
+     * Tras el registro, hace login automáticamente para devolver los tokens.
+     */
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody AuthRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -49,7 +55,7 @@ public class AuthController {
 
         userRepository.save(user);
 
-        // Auto login after registration
+        // Aquí está la función que hace login automático tras el registro
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -57,6 +63,11 @@ public class AuthController {
         return ResponseEntity.ok(buildAuthResponse(authentication, user));
     }
 
+    /**
+     * Autentica a un usuario existente.
+     * Verifica las credenciales (email y contraseña) y, si son correctas,
+     * genera y devuelve los tokens de acceso y refresco.
+     */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -69,6 +80,11 @@ public class AuthController {
         return ResponseEntity.ok(buildAuthResponse(authentication, user));
     }
 
+    /**
+     * Renueva los tokens de sesión.
+     * Recibe el 'refresh token', verifica que sea válido y no haya expirado,
+     * y si es correcto, genera un nuevo 'access token' y un nuevo 'refresh token'.
+     */
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshRequest request) {
         String refreshToken = request.getRefreshToken();
@@ -77,12 +93,11 @@ public class AuthController {
         if (username != null && !tokenProvider.isTokenExpired(refreshToken)) {
             org.springframework.security.core.userdetails.UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             
-            // Re-authenticate or just generate tokens if valid
-            // For simplicity and following the pattern:
+            // Aquí es donde se renuevan los tokens de sesión (Refresh Token)
             User user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // We need an Authentication object to generate tokens via the existing method
+            // Aquí generamos el objeto de autenticación para crear nuevos tokens
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities()
             );
@@ -93,6 +108,11 @@ public class AuthController {
         return ResponseEntity.status(401).build();
     }
 
+    /**
+     * Obtiene los datos del usuario actualmente autenticado.
+     * Verifica el token de la petición actual y devuelve el perfil del usuario
+     * (ID, username, email, rol y avatar). Si no hay sesión, devuelve 401.
+     */
     @org.springframework.web.bind.annotation.GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication == null || 
@@ -125,6 +145,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Método auxiliar privado para construir la respuesta de autenticación.
+     * Genera los tokens JWT y mapea la entidad User a un DTO de usuario para el frontend.
+     */
     private AuthResponse buildAuthResponse(Authentication auth, User user) {
         String accessToken = tokenProvider.generateAccessToken(auth);
         String refreshToken = tokenProvider.generateRefreshToken(auth);

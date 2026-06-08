@@ -19,6 +19,7 @@ public class AIService {
     @Value("${ai.service.url:http://localhost:8000}")
     private String aiServiceUrl;
 
+    // Aquí es donde el Backend (Java) se comunica con la Inteligencia Artificial (Python) para moderar textos
     public boolean checkModeration(String text) {
         try {
             String url = aiServiceUrl + "/social/moderation/check";
@@ -35,6 +36,7 @@ public class AIService {
         return false;
     }
 
+    // Aquí el Backend le pide a la IA que genere los vectores matemáticos (Embeddings) de una reseña
     public void generateReviewEmbedding(Long reviewId) {
         try {
             String url = aiServiceUrl + "/social/reviews/" + reviewId + "/embedding";
@@ -44,6 +46,7 @@ public class AIService {
         }
     }
 
+    // Aquí el Backend avisa a la IA para que recalcule los gustos (vector promedio) del usuario en la base de datos
     public void updateUserEmbedding(Long userId) {
         try {
             String url = aiServiceUrl + "/social/users/" + userId + "/update-embedding";

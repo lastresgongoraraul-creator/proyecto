@@ -6,6 +6,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Entidad asociativa que registra cuando un usuario se une a la comunidad
+ * de un juego en particular. Permite listar a los miembros de cada juego.
+ */
 @Entity
 @Table(name = "community_members", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "game_id"})

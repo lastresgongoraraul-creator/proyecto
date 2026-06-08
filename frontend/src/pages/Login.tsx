@@ -29,7 +29,7 @@ const Login: React.FC = () => {
   const mutation = useMutation({
     mutationFn: (data: LoginForm) => api.post('/auth/login', data),
     onSuccess: (response) => {
-      login(response.data.accessToken, response.data.user);
+      login(response.data.accessToken, response.data.refreshToken, response.data.user);
       navigate('/');
     },
     onError: (err: unknown) => {

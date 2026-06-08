@@ -38,7 +38,8 @@ const Register: React.FC = () => {
       password: data.password
     }),
     onSuccess: (response) => {
-      login(response.data.accessToken, response.data.user);
+      // Auto login after registration
+      login(response.data.accessToken, response.data.refreshToken, response.data.user);
       navigate('/');
     },
     onError: (err: unknown) => {

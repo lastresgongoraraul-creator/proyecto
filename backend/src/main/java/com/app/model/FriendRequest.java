@@ -6,6 +6,11 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
+/**
+ * Representa una solicitud de amistad enviada entre dos usuarios.
+ * Contiene al usuario que envía (sender), al que la recibe (receiver)
+ * y el estado actual de la petición (PENDING, ACCEPTED, REJECTED).
+ */
 @Entity
 @Table(name = "friend_requests", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"sender_id", "receiver_id"})

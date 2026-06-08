@@ -3,6 +3,10 @@ package com.app.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Representa un rol de seguridad dentro del sistema (ej. USER, ADMIN, MODERATOR).
+ * Se utiliza en combinación con el User y el SecurityConfig para autorizar rutas.
+ */
 @Entity
 @Table(name = "roles")
 @Getter

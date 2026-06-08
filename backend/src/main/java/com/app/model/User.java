@@ -12,6 +12,10 @@ import java.time.ZonedDateTime;
 import java.util.Set;
 import java.util.HashSet;
 
+/**
+ * Representa a un usuario dentro del sistema.
+ * Contiene la información personal, credenciales, roles y preferencias del usuario.
+ */
 @Entity
 @Table(name = "users")
 @Getter

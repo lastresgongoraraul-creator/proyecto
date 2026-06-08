@@ -38,10 +38,10 @@ public class ReviewService {
         Game game = gameRepository.findById(request.getGameId())
                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
-        // AI Moderation check
+        // Aquí se llama al servicio de IA en Python para comprobar si el comentario es ofensivo
         boolean isOffensive = aiService.checkModeration(request.getComment());
 
-        // Atomic update of game score
+        // Aquí está la función que actualiza la puntuación del juego de forma atómica y concurrente
         gameService.updateGameScore(game.getId(), request.getScore());
 
         Review review = Review.builder()
@@ -53,12 +53,12 @@ public class ReviewService {
 
         Review savedReview = reviewRepository.save(review);
 
-        // If offensive, auto-report and flag
+        // Aquí se reporta y censura automáticamente el mensaje si la IA detecta que es ofensivo
         if (isOffensive) {
             moderationService.reportReview(savedReview.getId(), "SYSTEM", "Automatic AI detection: Offensive language");
         }
 
-        // Generate embedding and update user profile (Asynchronously would be better, but we'll call them here for simplicity)
+        // Aquí se mandan a generar los vectores (embeddings) del usuario y la reseña para el motor de recomendaciones
         aiService.generateReviewEmbedding(savedReview.getId());
         aiService.updateUserEmbedding(user.getId());
 
@@ -78,7 +78,7 @@ public class ReviewService {
         review.setScore(request.getScore());
         review.setComment(request.getComment());
 
-        // Update game score
+        // Aquí actualizamos la nota media del juego de forma segura tras editar una reseña
         gameService.updateGameScoreOnEdit(review.getGame().getId(), oldScore, request.getScore());
 
         return reviewRepository.save(review);
@@ -97,7 +97,7 @@ public class ReviewService {
             throw new RuntimeException("You are not authorized to delete this review");
         }
 
-        // Update game score before deleting
+        // Aquí recalculamos la nota media del juego justo antes de borrar la reseña de la base de datos
         gameService.updateGameScoreOnDelete(review.getGame().getId(), review.getScore());
 
         reviewRepository.delete(review);

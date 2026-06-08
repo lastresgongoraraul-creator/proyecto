@@ -7,8 +7,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const login = (accessToken: string, userData: User) => {
+  const login = (accessToken: string, refreshToken: string, userData: User) => {
     setAccessToken(accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
     setUser(userData);
   };
 
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Logout error', e);
     } finally {
       setAccessToken(null);
+      localStorage.removeItem('refreshToken');
       setUser(null);
     }
   };

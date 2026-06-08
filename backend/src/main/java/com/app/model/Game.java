@@ -9,6 +9,11 @@ import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * Representa un videojuego en la plataforma.
+ * Almacena su información básica (nombre, géneros, plataformas),
+ * estadísticas como la nota media (avgScore) y su ID externo (igdbId) si proviene de IGDB.
+ */
 @Entity
 @Table(name = "games")
 @Getter
